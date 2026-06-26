@@ -40,10 +40,12 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:apk": "export JAVA_HOME=\"/opt/homebrew/opt/openjdk@17\" && export ANDROID_HOME=\"$HOME/Library/Android/sdk\" && cd android && ./gradlew assembleDebug && cp app/build/outputs/apk/debug/app-debug.apk ../CustomerOrderingApp.apk",
+    "build:apk:release": "export JAVA_HOME=\"/opt/homebrew/opt/openjdk@17\" && export ANDROID_HOME=\"$HOME/Library/Android/sdk\" && cd android && ./gradlew assembleRelease && cp app/build/outputs/apk/release/app-arm64-v8a-release.apk ../CustomerOrderingApp-Release.apk"
   },
   "private": true
 }

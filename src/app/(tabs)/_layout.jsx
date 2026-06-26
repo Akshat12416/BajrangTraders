@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { useCartStore } from '../../store/cartStore';
 
 export default function TabLayout() {
@@ -23,7 +23,7 @@ export default function TabLayout() {
         },
         tabBarStyle: { 
           position: 'absolute',
-          bottom: insets.bottom + 16,
+          bottom: Platform.OS === 'android' ? 12 : insets.bottom + 16,
           left: 16,
           right: 16,
           height: 64, 
