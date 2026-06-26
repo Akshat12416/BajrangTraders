@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import dummyLedger from '../../data/dummyLedger.json';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LedgerScreen() {
   const insets = useSafeAreaInsets();
@@ -64,6 +65,14 @@ export default function LedgerScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Gradient fade at bottom - Blinkit style */}
+      <LinearGradient
+        colors={['transparent', 'rgba(248,248,248,0.85)', '#F8F8F8']}
+        locations={[0, 0.45, 1]}
+        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120 }}
+        pointerEvents="none"
+      />
     </View>
   );
 }

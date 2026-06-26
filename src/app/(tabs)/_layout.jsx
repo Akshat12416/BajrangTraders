@@ -17,6 +17,10 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#1A6EB4',
         tabBarInactiveTintColor: '#B3B3B3',
         tabBarShowLabel: false,
+        tabBarItemStyle: {
+          paddingVertical: 0,
+          marginTop: 10,
+        },
         tabBarStyle: { 
           position: 'absolute',
           bottom: insets.bottom + 16,
@@ -26,6 +30,8 @@ export default function TabLayout() {
           borderRadius: 32,
           backgroundColor: '#FFFFFF', 
           borderTopWidth: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.1,
@@ -74,7 +80,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="products"
         options={{
-          href: null, // Hides it from the tab bar completely
+          href: null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tabs>

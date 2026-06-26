@@ -3,6 +3,7 @@ import dummyProducts from '../../data/dummyProducts.json';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCartStore } from '../../store/cartStore';
 
 export default function ProductListScreen() {
@@ -110,6 +111,14 @@ export default function ProductListScreen() {
           })}
         </View>
       </ScrollView>
+
+      {/* Gradient fade at bottom - Blinkit style */}
+      <LinearGradient
+        colors={['transparent', 'rgba(248,248,248,0.85)', '#F8F8F8']}
+        locations={[0, 0.45, 1]}
+        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120 }}
+        pointerEvents="none"
+      />
     </View>
   );
 }

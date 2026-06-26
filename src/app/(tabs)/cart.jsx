@@ -1,6 +1,8 @@
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCartStore } from '../../store/cartStore';
 
 export default function CartScreen() {
