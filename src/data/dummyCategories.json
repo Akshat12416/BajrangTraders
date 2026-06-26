@@ -1,0 +1,8 @@
+[
+  { "id": "cat_1", "name": "Fresh Fruits & Vegetable", "icon": "🍎", "color": "#E8F5EE" },
+  { "id": "cat_2", "name": "Cooking Oil & Ghee", "icon": "🛢️", "color": "#FEF0DC" },
+  { "id": "cat_3", "name": "Meat & Fish", "icon": "🥩", "color": "#FDE8E4" },
+  { "id": "cat_4", "name": "Bakery & Snacks", "icon": "🍞", "color": "#F4EBF7" },
+  { "id": "cat_5", "name": "Dairy & Eggs", "icon": "🥛", "color": "#FFF9E5" },
+  { "id": "cat_6", "name": "Beverages", "icon": "🧃", "color": "#E8F0FA" }
+]

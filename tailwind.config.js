@@ -1,27 +1,12 @@
 /** @type {import('tailwindcss').Config} */
-
-/**
- * TAILWIND CONFIG — NativeWind v4
- * Imports design tokens from /design/design-tokens.js
- * so all custom colors/spacing are available as Tailwind classes.
- *
- * Usage examples:
- *   <View className="bg-primary px-screen rounded-card" />
- *   <Text className="text-textPrimary font-bold text-lg" />
- *   <TouchableOpacity className="bg-primary h-btn-lg rounded-full" />
- */
-
 module.exports = {
   content: [
     './App.{js,jsx,ts,tsx}',
-    './app/**/*.{js,jsx,ts,tsx}',
+    './src/**/*.{js,jsx,ts,tsx}',
   ],
-
+  presets: [require('nativewind/preset')],
   theme: {
     extend: {
-
-      // ─── COLORS ───────────────────────────────────
-      // Usage: bg-primary, text-textSecondary, border-border
       colors: {
         primary:        '#53B175',
         primaryLight:   '#E8F5EE',
@@ -46,18 +31,12 @@ module.exports = {
         statusApproved: '#5383EC',
         statusDispatch: '#53B175',
       },
-
-      // ─── SPACING ──────────────────────────────────
-      // Usage: px-screen, py-card, gap-section
       spacing: {
-        screen:  '24px',    // Horizontal screen padding
-        card:    '16px',    // Card internal padding
-        section: '32px',    // Between major sections
-        input:   '16px',    // Input field padding
+        screen:  '24px',
+        card:    '16px',
+        section: '32px',
+        input:   '16px',
       },
-
-      // ─── BORDER RADIUS ────────────────────────────
-      // Usage: rounded-card, rounded-btn, rounded-chip
       borderRadius: {
         chip:   '4px',
         btn:    '8px',
@@ -65,10 +44,6 @@ module.exports = {
         'card-lg': '18px',
         modal:  '24px',
       },
-
-      // ─── FONT SIZES ───────────────────────────────
-      // Usage: text-xs, text-sm, text-base already built into Tailwind
-      // These are extra aliases for semantic naming
       fontSize: {
         'caption': ['10px', { lineHeight: '14px' }],
         'label':   ['12px', { lineHeight: '16px' }],
@@ -79,9 +54,6 @@ module.exports = {
         'heading': ['24px', { lineHeight: '32px' }],
         'hero':    ['30px', { lineHeight: '38px' }],
       },
-
-      // ─── HEIGHTS (for buttons & inputs) ───────────
-      // Usage: h-btn-lg, h-btn-md, h-input
       height: {
         'btn-lg':  '56px',
         'btn-md':  '48px',
@@ -90,8 +62,6 @@ module.exports = {
         'otp-box': '56px',
         'tab-bar': '72px',
       },
-
-      // ─── WIDTHS ───────────────────────────────────
       width: {
         'otp-box':      '56px',
         'product-card': '174px',
@@ -99,6 +69,5 @@ module.exports = {
       },
     },
   },
-
   plugins: [],
 };

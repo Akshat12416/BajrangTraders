@@ -1,0 +1,46 @@
+[
+  {
+    "id": "prod_1",
+    "categoryId": "cat_1",
+    "name": "Organic Bananas",
+    "company": "Farm Fresh",
+    "pricePiece": 40,
+    "priceBox": 400,
+    "unit": "1 kg, Price",
+    "inStock": true,
+    "image": "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=500"
+  },
+  {
+    "id": "prod_2",
+    "categoryId": "cat_1",
+    "name": "Red Apples",
+    "company": "Kashmir Orchards",
+    "pricePiece": 120,
+    "priceBox": 1000,
+    "unit": "1 kg, Price",
+    "inStock": true,
+    "image": "https://images.unsplash.com/photo-1560806887-1e4cd0b6faa6?w=500"
+  },
+  {
+    "id": "prod_3",
+    "categoryId": "cat_5",
+    "name": "Amul Fresh Milk",
+    "company": "Amul",
+    "pricePiece": 66,
+    "priceBox": 792,
+    "unit": "1 L, Price",
+    "inStock": true,
+    "image": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500"
+  },
+  {
+    "id": "prod_4",
+    "categoryId": "cat_2",
+    "name": "Fortune Sunflower Oil",
+    "company": "Fortune",
+    "pricePiece": 150,
+    "priceBox": 1500,
+    "unit": "1 L, Price",
+    "inStock": false,
+    "image": "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=500"
+  }
+]
