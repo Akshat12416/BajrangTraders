@@ -1,8 +1,8 @@
 [
-  { "id": "cat_1", "name": "Fresh Fruits & Vegetable", "icon": "🍎", "color": "#E8F5EE" },
-  { "id": "cat_2", "name": "Cooking Oil & Ghee", "icon": "🛢️", "color": "#FEF0DC" },
-  { "id": "cat_3", "name": "Meat & Fish", "icon": "🥩", "color": "#FDE8E4" },
-  { "id": "cat_4", "name": "Bakery & Snacks", "icon": "🍞", "color": "#F4EBF7" },
-  { "id": "cat_5", "name": "Dairy & Eggs", "icon": "🥛", "color": "#FFF9E5" },
-  { "id": "cat_6", "name": "Beverages", "icon": "🧃", "color": "#E8F0FA" }
+  { "id": "cat_1", "name": "Cooking Oils & Ghee", "image": "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=500" },
+  { "id": "cat_2", "name": "Soaps & Detergents", "image": "https://images.unsplash.com/photo-1584820927498-cafe4c107dc6?w=500" },
+  { "id": "cat_3", "name": "Snacks & Namkeen", "image": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=500" },
+  { "id": "cat_4", "name": "Home Cleaners", "image": "https://images.unsplash.com/photo-1584820927500-1c5c62181515?w=500" },
+  { "id": "cat_5", "name": "Personal Care", "image": "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500" },
+  { "id": "cat_6", "name": "Packaged Foods", "image": "https://images.unsplash.com/photo-1605389658257-2e1cb5562768?w=500" }
 ]

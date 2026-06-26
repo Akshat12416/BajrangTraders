@@ -1,81 +1,142 @@
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import dummyCategories from '../../data/dummyCategories.json';
 import dummyProducts from '../../data/dummyProducts.json';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
-  const { phoneNumber } = useAuthStore();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView className="flex-1 bg-background">
-      <View className="px-screen pt-12 pb-4 flex-row justify-between items-center">
-        <View className="flex-row items-center">
-          <Ionicons name="location-outline" size={24} color="#181725" />
-          <Text className="text-title-sm font-semibold text-textPrimary ml-2">Welcome</Text>
-        </View>
-        <Ionicons name="notifications-outline" size={24} color="#181725" />
-      </View>
-
-      <View className="px-screen mb-section">
-        <View className="h-input bg-surface rounded-btn px-input flex-row items-center">
-          <Ionicons name="search" size={20} color="#181725" />
-          <TextInput
-            className="flex-1 ml-2 text-body-md"
-            placeholder="Search Store"
-            placeholderTextColor="#B3B3B3"
-          />
-        </View>
-      </View>
-
-      <View className="px-screen mb-section">
-        <View className="w-full h-32 bg-primaryLight rounded-card-lg items-center justify-center">
-           <Text className="text-title font-bold text-primary">Fresh Groceries</Text>
-        </View>
-      </View>
-
-      <View className="mb-section">
-        <View className="px-screen flex-row justify-between items-center mb-4">
-          <Text className="text-title font-bold text-textPrimary">Categories</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/categories')}>
-            <Text className="text-body text-primary">See all</Text>
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        
+        {/* Header */}
+        <View className="px-4 py-4 flex-row justify-between items-center">
+          {/* Location */}
+          <TouchableOpacity className="flex-row items-center border border-surfaceDark rounded-full px-3 py-1.5">
+            <Ionicons name="location" size={16} color="#0066CC" />
+            <Text className="text-label font-semibold text-textPrimary mx-1" numberOfLines={1}>Store 476CP...</Text>
+          </TouchableOpacity>
+          
+          {/* Delivery Info */}
+          <View className="flex-row items-center flex-1 justify-center mx-2">
+            <MaterialCommunityIcons name="moped" size={20} color="#E2523A" />
+            <View className="ml-1">
+              <Text className="text-[10px] text-textSecondary">Free delivery</Text>
+              <Text className="text-label font-bold text-textPrimary">₹1000+ ⓘ</Text>
+            </View>
+          </View>
+          
+          {/* Avatar */}
+          <TouchableOpacity className="w-10 h-10 rounded-full bg-surfaceDark overflow-hidden border border-surfaceDark">
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100' }} className="w-full h-full" />
           </TouchableOpacity>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 16 }}>
-          {dummyCategories.map(cat => (
-            <TouchableOpacity key={cat.id} className="w-[100px] h-[100px] rounded-card items-center justify-center" style={{ backgroundColor: cat.color }}>
-              <Text className="text-3xl mb-2">{cat.icon}</Text>
-              <Text className="text-caption font-semibold text-textPrimary text-center px-1" numberOfLines={2}>{cat.name}</Text>
+
+        {/* Search Bar */}
+        <View className="px-4 mb-4">
+          <View className="h-[48px] bg-white border border-surfaceDark rounded-full px-4 flex-row items-center shadow-sm shadow-black/5">
+            <Ionicons name="search" size={20} color="#0066CC" />
+            <TextInput
+              className="flex-1 mx-2 text-body"
+              placeholder="What are u looking for ?"
+              placeholderTextColor="#B3B3B3"
+            />
+            <TouchableOpacity>
+              <Ionicons name="camera-outline" size={20} color="#B3B3B3" />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      <View className="mb-section">
-        <View className="px-screen flex-row justify-between items-center mb-4">
-          <Text className="text-title font-bold text-textPrimary">Best Selling</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/products')}>
-            <Text className="text-body text-primary">See all</Text>
-          </TouchableOpacity>
+          </View>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 16 }}>
-          {dummyProducts.map(prod => (
-            <TouchableOpacity key={prod.id} className="w-[174px] h-[248px] bg-surface rounded-card-lg p-card">
-              <Image source={{ uri: prod.image }} className="w-full h-24 mb-4 rounded-md" resizeMode="cover" />
-              <Text className="text-body font-bold text-textPrimary mb-1" numberOfLines={1}>{prod.name}</Text>
-              <Text className="text-caption text-textSecondary mb-2">{prod.unit}</Text>
-              <View className="flex-row justify-between items-center mt-auto">
-                <Text className="text-title-sm font-semibold text-textPrimary">₹{prod.pricePiece}</Text>
-                <TouchableOpacity className="w-9 h-9 bg-primary rounded-btn items-center justify-center">
+
+        {/* Banner */}
+        <View className="px-4 mb-6">
+          <View className="w-full h-32 bg-[#1A6EB4] rounded-[20px] overflow-hidden relative">
+            <View className="p-5 z-10 w-2/3">
+              <Text className="text-white text-label mb-1 opacity-90">Shop wholesale</Text>
+              <Text className="text-white text-heading font-bold mb-2">Pay Later !</Text>
+              <View className="bg-[#4DB4FA] self-start px-2 py-0.5 rounded-full">
+                <Text className="text-white text-[10px] font-bold">OCTOBER7</Text>
+              </View>
+            </View>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1588612502694-82a1dd0516fb?w=500' }} 
+              className="absolute right-0 top-0 bottom-0 w-1/2 opacity-80"
+              resizeMode="cover"
+            />
+          </View>
+        </View>
+
+        {/* Categories */}
+        <View className="mb-6">
+          <View className="px-4 flex-row justify-between items-center mb-4">
+            <Text className="text-title-sm font-bold text-textPrimary">Categories 😋</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/categories')}>
+              <Text className="text-body text-[#0066CC] font-semibold">See all</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
+            {dummyCategories.map(cat => (
+              <TouchableOpacity key={cat.id} className="items-center w-16" onPress={() => router.push(`/(tabs)/products?category=${cat.id}`)}>
+                <View className="w-16 h-16 rounded-full bg-[#F0F6FA] items-center justify-center mb-2 overflow-hidden border border-[#E5E5E5]">
+                  <Image source={{ uri: cat.image }} className="w-12 h-12 rounded-full" resizeMode="cover" />
+                </View>
+                <Text className="text-label text-textPrimary text-center" numberOfLines={1}>{cat.name.split(' ')[0]}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Best Deals */}
+        <View className="mb-6">
+          <View className="px-4 flex-row justify-between items-center mb-4">
+            <Text className="text-title-sm font-bold text-textPrimary">Best deals 🔥</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/products')}>
+              <Text className="text-body text-[#0066CC] font-semibold">See all</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
+            {dummyProducts.map(prod => (
+              <TouchableOpacity key={prod.id} className="w-[160px] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative">
+                
+                {/* Top Badges */}
+                <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
+                  <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm">
+                    <Text className="text-[#0066CC] text-[10px] font-bold">{prod.discountPercentage.split(' ')[0]}</Text>
+                    <Text className="text-[#0066CC] text-[10px] font-bold">Off</Text>
+                  </View>
+                  <TouchableOpacity>
+                    <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Image */}
+                <Image source={{ uri: prod.image }} className="w-full h-[120px] mb-3 mt-4 rounded-lg" resizeMode="contain" />
+
+                {/* Add Button */}
+                <TouchableOpacity className="absolute bottom-16 right-3 w-8 h-8 bg-[#1A6EB4] rounded-full items-center justify-center z-10">
                   <Ionicons name="add" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    </ScrollView>
+
+                {/* Price Info */}
+                <Text className="text-[18px] font-bold text-[#E2523A] mb-0.5">{prod.discountPrice}₹</Text>
+                <View className="flex-row items-center mb-1">
+                  <Text className="text-[10px] text-textSecondary line-through mr-1">{prod.originalPrice}₹</Text>
+                  <Text className="text-[10px] text-[#0066CC] font-bold">{prod.discountPercentage}</Text>
+                </View>
+                
+                {/* Title */}
+                <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
+                <Text className="text-[10px] text-textSecondary mt-0.5">{prod.unit}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+      </ScrollView>
+    </View>
   );
 }

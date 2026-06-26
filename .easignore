@@ -1,0 +1,13 @@
+# EAS Build Ignore File
+# Ignore files and folders that shouldn't be packaged into the app bundle
+
+design/
+dist/
+docs/
+PRD.md
+AGENTS.md
+CLAUDE.md
+README.md
+.git/
+.github/
+.vscode/
