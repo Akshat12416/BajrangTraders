@@ -10,13 +10,19 @@ export default function ProductDetailScreen() {
   const { productId } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { addItem, getItemQuantity, updateQuantity } = useCartStore();
+  
+  // Subscribe directly to items for reactivity
+  const cartItems = useCartStore(state => state.items);
+  const addItem = useCartStore(state => state.addItem);
+  const updateQuantity = useCartStore(state => state.updateQuantity);
 
   const product = dummyProducts.find(p => p.id === productId);
   if (!product) return null;
 
   const category = dummyCategories.find(c => c.id === product.categoryId);
-  const qty = getItemQuantity(product.id);
+  
+  const itemInCart = cartItems.find(i => i.productId === product.id);
+  const qty = itemInCart ? itemInCart.quantity : 0;
 
   const handleAddToCart = () => {
     if (qty === 0) {

@@ -76,5 +76,18 @@
     "unit": "36 x 100g",
     "inStock": true,
     "image": "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500"
+  },
+  {
+    "id": "prod_7",
+    "categoryId": "cat_1",
+    "sku": "SURF-5KG-2",
+    "name": "Surf Excel Matic Liquid",
+    "company": "HUL",
+    "originalPrice": 998,
+    "discountPrice": 848,
+    "discountPercentage": "15% Off",
+    "unit": "2 x 5L",
+    "inStock": true,
+    "image": "https://images.unsplash.com/photo-1591280383735-0856651975c3?w=500"
   }
 ]
