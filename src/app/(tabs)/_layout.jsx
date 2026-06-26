@@ -6,8 +6,9 @@ import { useCartStore } from '../../store/cartStore';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const getTotalItems = useCartStore(state => state.getTotalItems);
-  const cartCount = getTotalItems();
+  // Subscribe to items array directly so badge re-renders
+  const cartItems = useCartStore(state => state.items);
+  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <Tabs

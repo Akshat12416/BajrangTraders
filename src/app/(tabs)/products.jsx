@@ -9,11 +9,19 @@ export default function ProductListScreen() {
   const { category } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { addItem, getItemQuantity, updateQuantity } = useCartStore();
+  // Subscribe to items directly so we re-render when cart changes
+  const cartItems = useCartStore(state => state.items);
+  const addItem = useCartStore(state => state.addItem);
+  const updateQuantity = useCartStore(state => state.updateQuantity);
   
   const filteredProducts = category 
     ? dummyProducts.filter(p => p.categoryId === category)
     : dummyProducts;
+
+  const getItemQuantity = (productId) => {
+    const item = cartItems.find(i => i.productId === productId);
+    return item ? item.quantity : 0;
+  };
 
   const handleAddToCart = (prod) => {
     const qty = getItemQuantity(prod.id);
@@ -59,30 +67,44 @@ export default function ProductListScreen() {
                 </View>
 
                 {/* Image */}
-                <Image source={{ uri: prod.image }} className="w-full h-[120px] mb-3 mt-4 rounded-lg" resizeMode="contain" />
+                <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
 
-                {/* Add Button */}
-                <TouchableOpacity 
-                  className="absolute bottom-[72px] right-3 w-8 h-8 bg-[#1A6EB4] rounded-full items-center justify-center z-10 shadow-sm shadow-black/10"
-                  onPress={() => handleAddToCart(prod)}
-                >
-                  {qty > 0 ? (
-                    <Text className="text-white text-label font-bold">{qty}</Text>
-                  ) : (
-                    <Ionicons name="add" size={20} color="#FFFFFF" />
-                  )}
-                </TouchableOpacity>
-
-                {/* Price Info */}
-                <Text className="text-[18px] font-bold text-[#E2523A] mb-0.5">₹{prod.discountPrice}</Text>
-                <View className="flex-row items-center mb-1">
-                  <Text className="text-[10px] text-textSecondary line-through mr-1">₹{prod.originalPrice}</Text>
-                  <Text className="text-[10px] text-[#1A6EB4] font-bold">{prod.discountPercentage}</Text>
-                </View>
-                
                 {/* Title & SKU */}
                 <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
-                <Text className="text-[10px] text-textSecondary mt-0.5">{prod.unit} • {prod.sku}</Text>
+                <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit} • {prod.sku}</Text>
+
+                {/* Price & Controls */}
+                <View className="flex-row justify-between items-end mt-auto">
+                  <View>
+                    <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.discountPrice}</Text>
+                    <Text className="text-[10px] text-textSecondary line-through">₹{prod.originalPrice}</Text>
+                  </View>
+
+                  {qty > 0 ? (
+                    <View className="flex-row items-center bg-[#1A6EB4] rounded-lg h-8 shadow-sm shadow-black/10">
+                      <TouchableOpacity 
+                        className="w-7 h-full items-center justify-center"
+                        onPress={(e) => { e.stopPropagation(); updateQuantity(prod.id, qty - 1); }}
+                      >
+                        <Ionicons name="remove" size={16} color="white" />
+                      </TouchableOpacity>
+                      <Text className="text-white text-label font-bold min-w-[16px] text-center">{qty}</Text>
+                      <TouchableOpacity 
+                        className="w-7 h-full items-center justify-center"
+                        onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                      >
+                        <Ionicons name="add" size={16} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity 
+                      className="w-8 h-8 bg-[#1A6EB4] rounded-lg items-center justify-center shadow-sm shadow-black/10"
+                      onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                    >
+                      <Ionicons name="add" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </TouchableOpacity>
             );
           })}
