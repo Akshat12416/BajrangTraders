@@ -60,7 +60,7 @@ export default function TabLayout() {
           title: 'Cart',
           tabBarIcon: ({ color }) => (
             <View className="relative">
-              <Ionicons name="basket-outline" size={26} color={color} />
+              <Ionicons name="cart-outline" size={26} color={color} />
               {cartCount > 0 && (
                 <View className="absolute -top-1 -right-2 bg-error w-4 h-4 rounded-full items-center justify-center">
                   <Text className="text-[10px] text-white font-bold">{cartCount}</Text>
