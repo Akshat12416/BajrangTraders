@@ -48,7 +48,10 @@ export default function HomeScreen() {
             </View>
           </View>
           
-          <TouchableOpacity className="w-10 h-10 rounded-full bg-[#E6F3FA] items-center justify-center border border-[#E5E5E5]">
+          <TouchableOpacity 
+            className="w-10 h-10 rounded-full bg-[#E6F3FA] items-center justify-center border border-[#E5E5E5]"
+            onPress={() => router.push('/profile')}
+          >
             <Ionicons name="person" size={20} color="#1A6EB4" />
           </TouchableOpacity>
         </View>

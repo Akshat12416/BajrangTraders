@@ -71,6 +71,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons name="receipt-outline" size={24} color={color} />
         }}
       />
+      <Tabs.Screen
+        name="products"
+        options={{
+          href: null, // Hides it from the tab bar completely
+        }}
+      />
     </Tabs>
   );
 }
