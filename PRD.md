@@ -150,7 +150,7 @@ Store everything design-related inside `/design/` at the root level.
 # Design Reference
 
 ## Figma Link
-https://www.figma.com/file/YOUR_FILE_ID/YOUR_FILE_NAME
+https://www.figma.com/design/vYv2IQblzR24CTM4vTeq9M/GroceryApp-Starter--Community-?node-id=111-24&t=c89JaWRTKU6b3S41-1
 
 ## Color Palette
 - Primary: #YOUR_PRIMARY_COLOR
