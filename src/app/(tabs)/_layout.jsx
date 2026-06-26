@@ -65,10 +65,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="products"
+        name="ledger"
         options={{
-          title: 'Products',
-          tabBarIcon: ({ color }) => <Ionicons name="list-outline" size={24} color={color} />
+          title: 'Ledger',
+          tabBarIcon: ({ color }) => <Ionicons name="receipt-outline" size={24} color={color} />
         }}
       />
     </Tabs>

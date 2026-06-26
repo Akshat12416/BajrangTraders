@@ -3,6 +3,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cartStore';
 import dummyCategories from '../../data/dummyCategories.json';
 import dummyProducts from '../../data/dummyProducts.json';
+import dummyLedger from '../../data/dummyLedger.json';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -64,22 +65,26 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Banner */}
+        {/* Outstanding Ledger Card */}
         <View className="px-4 mb-6">
-          <View className="w-full h-32 bg-[#1A6EB4] rounded-[20px] overflow-hidden relative">
-            <View className="p-5 z-10 w-2/3">
-              <Text className="text-white text-label mb-1 opacity-90">Shop wholesale</Text>
-              <Text className="text-white text-heading font-bold mb-2">Pay Later !</Text>
-              <View className="bg-[#4DB4FA] self-start px-2 py-0.5 rounded-full">
-                <Text className="text-white text-[10px] font-bold">BULK ORDER</Text>
-              </View>
+          <TouchableOpacity 
+            className="w-full bg-[#1A6EB4] rounded-[20px] p-5 shadow-sm shadow-black/10 flex-row justify-between items-center"
+            onPress={() => router.push('/(tabs)/ledger')}
+            activeOpacity={0.9}
+          >
+            <View>
+              <Text className="text-white/80 text-label mb-1">Total Outstanding</Text>
+              <Text className="text-white text-heading font-bold">₹{dummyLedger.summary.totalOutstanding}</Text>
             </View>
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1588612502694-82a1dd0516fb?w=500' }} 
-              className="absolute right-0 top-0 bottom-0 w-1/2 opacity-80"
-              resizeMode="cover"
-            />
-          </View>
+            <View className="items-end">
+              <View className="bg-white/20 px-2 py-1 rounded-md mb-2">
+                <Text className="text-white text-[10px] font-bold">Credit Limit: ₹{dummyLedger.summary.creditLimit}</Text>
+              </View>
+              {dummyLedger.summary.overdue > 0 && (
+                <Text className="text-[#FFB3B3] text-[10px] font-bold">Overdue: ₹{dummyLedger.summary.overdue}</Text>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Categories */}
@@ -174,6 +179,75 @@ export default function HomeScreen() {
               );
             })}
           </ScrollView>
+        </View>
+
+        {/* All Products Grid */}
+        <View className="px-4 mt-6">
+          <Text className="text-title-sm font-bold text-textPrimary mb-4">All Products</Text>
+          <View className="flex-row flex-wrap justify-between gap-y-4">
+            {dummyProducts.map(prod => {
+              const qty = getItemQuantity(prod.id);
+              return (
+                <TouchableOpacity 
+                  key={prod.id} 
+                  className="w-[48%] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
+                  onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
+                  activeOpacity={0.8}
+                >
+                  {/* Top Badges */}
+                  <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
+                    <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm">
+                      <Text className="text-[#1A6EB4] text-[10px] font-bold">{prod.discountPercentage.split(' ')[0]}</Text>
+                      <Text className="text-[#1A6EB4] text-[10px] font-bold">Off</Text>
+                    </View>
+                    <TouchableOpacity>
+                      <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Image */}
+                  <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
+
+                  {/* Title & SKU */}
+                  <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
+                  <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit} • {prod.sku}</Text>
+
+                  {/* Price & Controls */}
+                  <View className="flex-row justify-between items-end mt-auto">
+                    <View>
+                      <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.discountPrice}</Text>
+                      <Text className="text-[10px] text-textSecondary line-through">₹{prod.originalPrice}</Text>
+                    </View>
+
+                    {qty > 0 ? (
+                      <View className="flex-row items-center bg-[#1A6EB4] rounded-lg h-8 shadow-sm shadow-black/10">
+                        <TouchableOpacity 
+                          className="w-7 h-full items-center justify-center"
+                          onPress={(e) => { e.stopPropagation(); updateQuantity(prod.id, qty - 1); }}
+                        >
+                          <Ionicons name="remove" size={16} color="white" />
+                        </TouchableOpacity>
+                        <Text className="text-white text-label font-bold min-w-[16px] text-center">{qty}</Text>
+                        <TouchableOpacity 
+                          className="w-7 h-full items-center justify-center"
+                          onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                        >
+                          <Ionicons name="add" size={16} color="white" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity 
+                        className="w-8 h-8 bg-[#1A6EB4] rounded-lg items-center justify-center shadow-sm shadow-black/10"
+                        onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                      >
+                        <Ionicons name="add" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
       </ScrollView>
