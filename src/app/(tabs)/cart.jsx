@@ -7,9 +7,9 @@ import { useCartStore } from '../../store/cartStore';
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
-  const { items, updateQuantity, removeItem, clearCart, getTotalItems, getTotalPrice } = useCartStore();
-  const totalItems = getTotalItems();
-  const totalPrice = getTotalPrice();
+  const { items, updateQuantity, removeItem, clearCart } = useCartStore();
+  const totalItems = items.reduce((total, item) => total + item.quantity, 0);
+  const totalPrice = items.reduce((total, item) => total + (item.product.discountPrice * item.quantity), 0);
   const minOrder = 1000;
 
   if (items.length === 0) {
