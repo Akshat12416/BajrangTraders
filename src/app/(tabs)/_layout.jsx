@@ -1,16 +1,19 @@
 import { Tabs } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text } from 'react-native';
+import { useCartStore } from '../../store/cartStore';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const getTotalItems = useCartStore(state => state.getTotalItems);
+  const cartCount = getTotalItems();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#53B175',
+        tabBarActiveTintColor: '#1A6EB4',
         tabBarInactiveTintColor: '#B3B3B3',
         tabBarShowLabel: false,
         tabBarStyle: { 
@@ -51,9 +54,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <View className="relative">
               <Ionicons name="basket-outline" size={26} color={color} />
-              <View className="absolute -top-1 -right-2 bg-error w-4 h-4 rounded-full items-center justify-center">
-                <Text className="text-[10px] text-white font-bold">4</Text>
-              </View>
+              {cartCount > 0 && (
+                <View className="absolute -top-1 -right-2 bg-error w-4 h-4 rounded-full items-center justify-center">
+                  <Text className="text-[10px] text-white font-bold">{cartCount}</Text>
+                </View>
+              )}
             </View>
           )
         }}

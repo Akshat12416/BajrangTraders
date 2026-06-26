@@ -1,40 +1,74 @@
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
+  const insets = useSafeAreaInsets();
 
   const handleSendOTP = () => {
-    router.push({ pathname: '/(auth)/otp', params: { phone } });
+    if (phone.length >= 10) {
+      router.push({ pathname: '/(auth)/otp', params: { phone } });
+    }
   };
 
   return (
-    <View className="flex-1 bg-background px-screen pt-12">
-      <View className="h-40 justify-center items-center mb-section">
-        <View className="w-full h-full bg-surfaceDark rounded-card-lg items-center justify-center">
-          <Text className="text-textSecondary">Grocery App Image</Text>
+    <KeyboardAvoidingView 
+      className="flex-1 bg-background" 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ paddingTop: insets.top }}
+    >
+      <View className="flex-1 px-6 justify-between pb-8">
+        
+        {/* Top Section */}
+        <View className="items-center mt-16">
+          {/* Logo */}
+          <View className="w-20 h-20 bg-[#E6F3FA] rounded-full items-center justify-center mb-6">
+            <Ionicons name="storefront" size={36} color="#1A6EB4" />
+          </View>
+          <Text className="text-heading font-bold text-textPrimary mb-1">Welcome Back!</Text>
+          <Text className="text-body text-textSecondary text-center">
+            Sign in to access your wholesale orders
+          </Text>
+        </View>
+
+        {/* Form Section */}
+        <View className="mt-10">
+          <Text className="text-label font-semibold text-textSecondary mb-2 ml-1">PHONE NUMBER</Text>
+          <View className="flex-row items-center h-[56px] bg-white border border-surfaceDark rounded-2xl px-4 mb-6">
+            <View className="flex-row items-center mr-3 pr-3 border-r border-surfaceDark">
+              <Text className="text-body-md font-semibold text-textPrimary">🇮🇳 +91</Text>
+            </View>
+            <TextInput
+              className="flex-1 text-body-md text-textPrimary"
+              placeholder="Enter 10-digit number"
+              placeholderTextColor="#B3B3B3"
+              keyboardType="phone-pad"
+              maxLength={10}
+              value={phone}
+              onChangeText={setPhone}
+            />
+          </View>
+
+          <TouchableOpacity
+            className={`h-[56px] rounded-2xl items-center justify-center shadow-sm shadow-black/10 ${phone.length >= 10 ? 'bg-[#1A6EB4]' : 'bg-[#B3B3B3]'}`}
+            onPress={handleSendOTP}
+            disabled={phone.length < 10}
+          >
+            <Text className="text-white font-bold text-body-md">Send OTP</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bottom Section */}
+        <View className="items-center mt-auto pt-8">
+          <Text className="text-[10px] text-textHint text-center">
+            By continuing, you agree to our Terms of Service{'\n'}and Privacy Policy
+          </Text>
         </View>
       </View>
-      <Text className="text-heading font-bold text-textPrimary mb-2">Login</Text>
-      <Text className="text-body text-textSecondary mb-8">Enter your phone number to continue</Text>
-
-      <TextInput
-        className="h-input bg-surface px-input rounded-btn text-body-md text-textPrimary mb-auto"
-        placeholder="Phone Number"
-        placeholderTextColor="#B3B3B3"
-        keyboardType="phone-pad"
-        value={phone}
-        onChangeText={setPhone}
-      />
-
-      <TouchableOpacity
-        className="h-btn-lg bg-primary rounded-modal items-center justify-center mb-8"
-        onPress={handleSendOTP}
-      >
-        <Text className="text-textOnPrimary font-bold text-body-md">Send OTP</Text>
-      </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
