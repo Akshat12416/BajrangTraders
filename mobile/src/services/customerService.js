@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../config/api';
  * @param {string} customerId - The ID of the customer (default to demo '6732867')
  * @returns {Promise<Object>}
  */
-export async function getCustomerProfile(customerId = '6732867') {
+export async function getCustomerProfile(customerId = 'AEEV') {
   try {
     const response = await fetch(`${API_BASE_URL}/customer/${customerId}`);
     
