@@ -1,20 +1,46 @@
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cartStore';
-import dummyCategories from '../../data/dummyCategories.json';
-import dummyProducts from '../../data/dummyProducts.json';
 import dummyLedger from '../../data/dummyLedger.json';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getCategories, getProductsByCategory } from '../../services/productService';
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  // Subscribe to items directly so we re-render when cart changes
+  
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const cartItems = useCartStore(state => state.items);
   const addItem = useCartStore(state => state.addItem);
   const updateQuantity = useCartStore(state => state.updateQuantity);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [cats, prods] = await Promise.all([
+          getCategories(),
+          getProductsByCategory() // null category gets all products
+        ]);
+        setCategories(cats);
+        setProducts(prods);
+      } catch (err) {
+        setError("Failed to load data. Please check your connection.");
+        console.error("Home API Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const getItemQuantity = (productId) => {
     const item = cartItems.find(i => i.productId === productId);
@@ -29,6 +55,41 @@ export default function HomeScreen() {
       updateQuantity(prod.id, qty + 1);
     }
   };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color="#1A6EB4" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center p-6">
+        <Text className="text-body text-textSecondary text-center mb-4">{error}</Text>
+        <TouchableOpacity 
+          className="bg-[#1A6EB4] px-6 py-2 rounded-full"
+          onPress={() => {
+            setLoading(true);
+            setError(null);
+            Promise.all([getCategories(), getProductsByCategory()])
+              .then(([cats, prods]) => { setCategories(cats); setProducts(prods); setLoading(false); })
+              .catch(err => { setError("Still failing to connect. Please try again."); setLoading(false); });
+          }}
+        >
+          <Text className="text-white font-bold">Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Filter products for Best Deals (those with a scheme) or just take the first 10
+  const deals = products.filter(p => p.scheme).length > 0 
+    ? products.filter(p => p.scheme).slice(0, 10)
+    : products.slice(0, 10);
+
+  const allProducts = products.slice(0, 20);
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -100,12 +161,16 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
-            {dummyCategories.map(cat => (
-              <TouchableOpacity key={cat.id} className="items-center w-16" onPress={() => router.push(`/(tabs)/products?category=${cat.id}`)}>
+            {categories.map((cat, index) => (
+              <TouchableOpacity key={`${cat.code}-${index}`} className="items-center w-16" onPress={() => router.push(`/(tabs)/products?category=${cat.code}`)}>
                 <View className="w-16 h-16 rounded-full bg-[#F0F6FA] items-center justify-center mb-2 overflow-hidden border border-[#E5E5E5]">
-                  <Image source={{ uri: cat.image }} className="w-12 h-12 rounded-full" resizeMode="cover" />
+                  {cat.image ? (
+                    <Image source={{ uri: cat.image }} className="w-12 h-12 rounded-full" resizeMode="cover" />
+                  ) : (
+                    <Ionicons name="folder-outline" size={24} color="#1A6EB4" />
+                  )}
                 </View>
-                <Text className="text-label text-textPrimary text-center" numberOfLines={1}>{cat.name.split(' ')[0]}</Text>
+                <Text className="text-label text-textPrimary text-center" numberOfLines={1}>{cat.name}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -120,28 +185,35 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
-            {dummyProducts.map(prod => {
+            {deals.map((prod, index) => {
               const qty = getItemQuantity(prod.id);
               return (
                 <TouchableOpacity 
-                  key={prod.id} 
+                  key={`deal-${prod.id}-${index}`} 
                   className="w-[160px] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
                   onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
                   activeOpacity={0.8}
                 >
                   {/* Top Badges */}
                   <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
-                    <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm">
-                      <Text className="text-[#1A6EB4] text-[10px] font-bold">{prod.discountPercentage.split(' ')[0]}</Text>
-                      <Text className="text-[#1A6EB4] text-[10px] font-bold">Off</Text>
-                    </View>
+                    {prod.scheme ? (
+                      <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm">
+                        <Text className="text-[#1A6EB4] text-[10px] font-bold">Deal</Text>
+                      </View>
+                    ) : <View />}
                     <TouchableOpacity>
                       <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
                     </TouchableOpacity>
                   </View>
 
                   {/* Image */}
-                  <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
+                  {prod.image ? (
+                    <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
+                  ) : (
+                    <View className="w-full h-[100px] mb-2 mt-4 rounded-lg bg-gray-100 items-center justify-center">
+                       <Ionicons name="cube-outline" size={40} color="#B3B3B3" />
+                    </View>
+                  )}
                   
                   {/* Title */}
                   <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
@@ -150,8 +222,10 @@ export default function HomeScreen() {
                   {/* Price & Controls */}
                   <View className="flex-row justify-between items-end mt-auto">
                     <View>
-                      <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.discountPrice}</Text>
-                      <Text className="text-[10px] text-textSecondary line-through">₹{prod.originalPrice}</Text>
+                      <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.pricePerPiece || prod.mrp}</Text>
+                      {prod.mrp && prod.pricePerPiece && prod.mrp > prod.pricePerPiece && (
+                        <Text className="text-[10px] text-textSecondary line-through">₹{prod.mrp}</Text>
+                      )}
                     </View>
 
                     {qty > 0 ? (
@@ -189,38 +263,49 @@ export default function HomeScreen() {
         <View className="px-4 mt-6">
           <Text className="text-title-sm font-bold text-textPrimary mb-4">All Products</Text>
           <View className="flex-row flex-wrap justify-between gap-y-4">
-            {dummyProducts.map(prod => {
+            {allProducts.map((prod, index) => {
               const qty = getItemQuantity(prod.id);
               return (
                 <TouchableOpacity 
-                  key={prod.id} 
+                  key={`all-${prod.id}-${index}`} 
                   className="w-[48%] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
                   onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
                   activeOpacity={0.8}
                 >
                   {/* Top Badges */}
                   <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
-                    <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm">
-                      <Text className="text-[#1A6EB4] text-[10px] font-bold">{prod.discountPercentage.split(' ')[0]}</Text>
-                      <Text className="text-[#1A6EB4] text-[10px] font-bold">Off</Text>
-                    </View>
+                    {prod.scheme ? (
+                      <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm max-w-[70%]">
+                        <Text className="text-[#1A6EB4] text-[10px] font-bold text-center" numberOfLines={2}>
+                          Deal: {prod.scheme}
+                        </Text>
+                      </View>
+                    ) : <View />}
                     <TouchableOpacity>
                       <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
                     </TouchableOpacity>
                   </View>
 
                   {/* Image */}
-                  <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
+                  {prod.image ? (
+                    <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
+                  ) : (
+                    <View className="w-full h-[100px] mb-2 mt-4 rounded-lg bg-gray-100 items-center justify-center">
+                       <Ionicons name="cube-outline" size={40} color="#B3B3B3" />
+                    </View>
+                  )}
 
                   {/* Title & SKU */}
                   <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
-                  <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit} • {prod.sku}</Text>
+                  <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit} • Stock: {prod.stock}</Text>
 
                   {/* Price & Controls */}
                   <View className="flex-row justify-between items-end mt-auto">
                     <View>
-                      <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.discountPrice}</Text>
-                      <Text className="text-[10px] text-textSecondary line-through">₹{prod.originalPrice}</Text>
+                      <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.pricePerPiece || prod.mrp}</Text>
+                      {prod.mrp && prod.pricePerPiece && prod.mrp > prod.pricePerPiece && (
+                        <Text className="text-[10px] text-textSecondary line-through">₹{prod.mrp}</Text>
+                      )}
                     </View>
 
                     {qty > 0 ? (

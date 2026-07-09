@@ -80,11 +80,11 @@ export default function ProductListScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 }}>
           <View className="flex-row flex-wrap justify-between gap-y-4">
-            {products.map(prod => {
+            {products.map((prod, index) => {
               const qty = getItemQuantity(prod.id);
               return (
                 <TouchableOpacity 
-                  key={prod.id} 
+                  key={`${prod.id}-${index}`} 
                   className="w-[48%] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
                   onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
                   activeOpacity={0.8}
