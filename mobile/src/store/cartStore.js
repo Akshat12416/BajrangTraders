@@ -45,7 +45,7 @@ export const useCartStore = create((set, get) => ({
   },
 
   getTotalPrice: () => {
-    return get().items.reduce((total, item) => total + (item.product.discountPrice * item.quantity), 0);
+    return get().items.reduce((total, item) => total + ((item.product.pricePerPiece || item.product.mrp || 0) * item.quantity), 0);
   },
 
   getItemQuantity: (productId) => {

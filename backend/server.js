@@ -22,7 +22,12 @@ app.use('/api', routes);
 // Must be registered LAST — catches errors from every route above
 app.use(errorHandler);
 
+const { warmupCache } = require('./services/marg/masterSyncService');
+
 app.listen(config.port, () => {
   console.log(`Backend running on http://localhost:${config.port}`);
   console.log(`Try:    http://localhost:${config.port}/api/products`);
+  
+  // Start fetching data from Marg in the background immediately
+  warmupCache();
 });

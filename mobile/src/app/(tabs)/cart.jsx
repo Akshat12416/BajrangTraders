@@ -1,16 +1,33 @@
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Platform, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCartStore } from '../../store/cartStore';
+import { placeOrder } from '../../services/orderService';
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  
   const { items, updateQuantity, removeItem, clearCart } = useCartStore();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
-  const totalPrice = items.reduce((total, item) => total + (item.product.discountPrice * item.quantity), 0);
+  const totalPrice = items.reduce((total, item) => total + ((item.product.pricePerPiece || item.product.mrp || 0) * item.quantity), 0);
   const minOrder = 1000;
+
+  const handleCheckout = () => {
+    if (totalPrice < minOrder) {
+      if (Platform.OS === 'web') {
+        window.alert(`Minimum Order\n\nPlease add more items to meet the minimum order value of ₹${minOrder}.`);
+      } else {
+        Alert.alert('Minimum Order', `Please add more items to meet the minimum order value of ₹${minOrder}.`);
+      }
+      return;
+    }
+    router.push('/checkout');
+  };
 
   if (items.length === 0) {
     return (
@@ -56,18 +73,26 @@ export default function CartScreen() {
               <Ionicons name="checkmark-circle" size={22} color="#1A6EB4" />
             </TouchableOpacity>
 
-            {/* Image */}
-            <Image 
-              source={{ uri: item.product.image }} 
-              className="w-14 h-14 rounded-xl bg-[#F2F3F2]" 
-              resizeMode="cover" 
-            />
+            {/* Image or Fallback */}
+            {item.product.image ? (
+              <Image 
+                source={{ uri: item.product.image }} 
+                className="w-14 h-14 rounded-xl bg-[#F2F3F2]" 
+                resizeMode="cover" 
+              />
+            ) : (
+              <View className="w-14 h-14 rounded-xl bg-[#F2F3F2] items-center justify-center">
+                 <Ionicons name="cube-outline" size={24} color="#B3B3B3" />
+              </View>
+            )}
 
             {/* Info */}
             <View className="flex-1 ml-3">
               <View className="flex-row items-center">
-                <Text className="text-body font-bold text-[#1A6EB4] mr-1">₹{item.product.discountPrice}</Text>
-                <Text className="text-[10px] text-textSecondary line-through">₹{item.product.originalPrice}</Text>
+                <Text className="text-body font-bold text-[#1A6EB4] mr-1">₹{item.product.pricePerPiece || item.product.mrp}</Text>
+                {item.product.mrp && item.product.pricePerPiece && item.product.mrp > item.product.pricePerPiece && (
+                  <Text className="text-[10px] text-textSecondary line-through">₹{item.product.mrp}</Text>
+                )}
               </View>
               <Text className="text-body font-semibold text-textPrimary" numberOfLines={1}>{item.product.name}</Text>
               <Text className="text-[10px] text-textSecondary">{item.product.unit}</Text>
@@ -107,9 +132,20 @@ export default function CartScreen() {
             <Text className="text-label text-textSecondary">Total (without tax)</Text>
             <Text className="text-title font-bold text-[#1A6EB4]">₹{totalPrice.toFixed(2)}</Text>
           </View>
-          <TouchableOpacity className="bg-[#1A6EB4] rounded-full px-8 py-3.5 flex-row items-center shadow-sm shadow-black/10">
-            <Text className="text-white font-bold text-body-md mr-1">Checkout</Text>
-            <Ionicons name="chevron-forward" size={18} color="white" />
+          
+          <TouchableOpacity 
+            className={`rounded-full px-8 py-3.5 flex-row items-center shadow-sm shadow-black/10 ${totalPrice < minOrder || isCheckingOut ? 'bg-gray-400' : 'bg-[#1A6EB4]'}`}
+            onPress={handleCheckout}
+            disabled={totalPrice < minOrder || isCheckingOut}
+          >
+            {isCheckingOut ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <>
+                <Text className="text-white font-bold text-body-md mr-1">Checkout</Text>
+                <Ionicons name="chevron-forward" size={18} color="white" />
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>

@@ -25,15 +25,13 @@ async function placeOrder(order) {
   // cart, we call this once per line item. CONFIRM with Marg support whether a
   // batch/multi-line variant exists — calling once per item works but is not
   // atomic (a failure partway through leaves a partial order in Marg).
-  const results = [];
-
-  for (const item of order.items) {
+  const orderPromises = order.items.map(async (item) => {
     const body = {
-      OrderID: '', // Marg auto-generates this — leave blank on insert
+      OrderID: '', 
       OrderNo: order.orderNo || '0',
       CustomerID: order.customerId,
       MargID: config.marg.margId,
-      Type: 'S', // Sales Man — per Marg's default
+      Type: 'S',
       Sid: order.salesmanId,
       ProductCode: item.productCode,
       Quantity: String(item.quantity),
@@ -65,11 +63,11 @@ async function placeOrder(order) {
     };
 
     const rawResponse = await margPost('InsertOrderDetail', body);
-    const parsed = parseMaybeEncrypted(rawResponse, config.marg.decryptionKey);
-    results.push(parsed);
-  }
+    return parseMaybeEncrypted(rawResponse, config.marg.decryptionKey);
+  });
 
-  return results;
+  const results = await Promise.allSettled(orderPromises);
+  return results.map(r => r.status === 'fulfilled' ? r.value : { error: r.reason.message });
 }
 
 /**

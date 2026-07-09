@@ -142,18 +142,48 @@ async function syncMasterData(since = '2000-01-01') {
   };
 }
 
+let activeSyncPromise = null;
+
 /**
- * Returns cached master data, refreshing from Marg only if the cache
- * has expired. This is what controllers should call — not syncMasterData
- * directly — so every screen load doesn't trigger a fresh Marg API call.
+ * Returns cached master data.
+ * Implements a "Stale-While-Revalidate" strategy: if the cache is expired,
+ * it returns the stale data immediately (1-2s load times) while triggering
+ * a background sync to fetch fresh data for the next user.
  */
 async function getMasterData() {
   const now = Date.now();
-  if (now - lastSyncTime > config.masterDataCacheTtlMs) {
-    cache = await syncMasterData();
-    lastSyncTime = now;
+  const isStale = now - lastSyncTime > config.masterDataCacheTtlMs;
+
+  if (isStale) {
+    if (!activeSyncPromise) {
+      // Trigger background sync
+      activeSyncPromise = syncMasterData()
+        .then((newCache) => {
+          cache = newCache;
+          lastSyncTime = Date.now();
+        })
+        .catch((err) => {
+          console.error('Background sync failed:', err);
+        })
+        .finally(() => {
+          activeSyncPromise = null;
+        });
+    }
+
+    // If we have literally no data (first run), we MUST wait for the sync to finish
+    if (lastSyncTime === 0) {
+      await activeSyncPromise;
+    }
+    // Otherwise, we just fall through and return the stale cache instantly!
   }
+
   return cache;
 }
 
-module.exports = { getMasterData, syncMasterData, fetchRawMasterData, mapProduct, mapCustomer, mapStype };
+/** Triggers an immediate cache fetch in the background. */
+function warmupCache() {
+  console.log('Initiating Marg API cache warmup in background...');
+  getMasterData().catch(err => console.error('Warmup failed:', err));
+}
+
+module.exports = { getMasterData, syncMasterData, fetchRawMasterData, mapProduct, mapCustomer, mapStype, warmupCache };

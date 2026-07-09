@@ -64,11 +64,21 @@ function decryptMargResponseToJson(base64CipherText, decryptionKey) {
   return JSON.parse(decryptMargResponse(base64CipherText, decryptionKey));
 }
 
+function parseUnencryptedDeflate(base64CipherText) {
+  const deflateBytes = Buffer.from(base64CipherText.replace(/\s+/g, ''), 'base64');
+  const jsonBytes = zlib.inflateRawSync(deflateBytes);
+  let jsonStr = jsonBytes.toString('utf8');
+  if (jsonStr.charCodeAt(0) === 0xFEFF) {
+    jsonStr = jsonStr.slice(1);
+  }
+  return JSON.parse(jsonStr);
+}
+
 /**
  * Some Marg endpoints (e.g. InsertOrderDetail) may return SHORT plain JSON
  * responses that are NOT encrypted — the docs are inconsistent about this.
- * This helper tries plain JSON.parse first, and falls back to decrypt-then-parse
- * if that fails. Use this for endpoints you haven't confirmed encryption for yet.
+ * This helper tries plain JSON.parse first, falls back to unencrypted deflate, 
+ * and falls back to decrypt-then-parse if that fails. Use this for endpoints you haven't confirmed encryption for yet.
  */
 function parseMaybeEncrypted(rawResponseBody, decryptionKey) {
   const raw = typeof rawResponseBody === 'string'
@@ -77,8 +87,13 @@ function parseMaybeEncrypted(rawResponseBody, decryptionKey) {
 
   try {
     return JSON.parse(raw);
-  } catch (e) {
-    return decryptMargResponseToJson(raw.replace(/^"|"$/g, ''), decryptionKey);
+  } catch (e1) {
+    const cleanRaw = raw.replace(/^"|"$/g, '');
+    try {
+      return parseUnencryptedDeflate(cleanRaw);
+    } catch (e2) {
+      return decryptMargResponseToJson(cleanRaw, decryptionKey);
+    }
   }
 }
 

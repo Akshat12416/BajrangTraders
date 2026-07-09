@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cartStore';
-import dummyLedger from '../../data/dummyLedger.json';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getCategories, getProductsByCategory } from '../../services/productService';
+import { getCustomerProfile } from '../../services/customerService';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -14,6 +14,7 @@ export default function HomeScreen() {
   
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -26,12 +27,19 @@ export default function HomeScreen() {
       try {
         setLoading(true);
         setError(null);
-        const [cats, prods] = await Promise.all([
+        const custPromise = getCustomerProfile().catch(err => {
+          console.warn("Failed to fetch customer profile on home screen", err);
+          return null;
+        });
+
+        const [cats, prods, cust] = await Promise.all([
           getCategories(),
-          getProductsByCategory() // null category gets all products
+          getProductsByCategory(), // null category gets all products
+          custPromise // fetches demo customer 6732867
         ]);
         setCategories(cats);
         setProducts(prods);
+        setCustomer(cust);
       } catch (err) {
         setError("Failed to load data. Please check your connection.");
         console.error("Home API Error:", err);
@@ -73,8 +81,12 @@ export default function HomeScreen() {
           onPress={() => {
             setLoading(true);
             setError(null);
-            Promise.all([getCategories(), getProductsByCategory()])
-              .then(([cats, prods]) => { setCategories(cats); setProducts(prods); setLoading(false); })
+            const custPromise = getCustomerProfile().catch(err => {
+              console.warn("Failed to fetch customer profile on home screen", err);
+              return null;
+            });
+            Promise.all([getCategories(), getProductsByCategory(), custPromise])
+              .then(([cats, prods, cust]) => { setCategories(cats); setProducts(prods); setCustomer(cust); setLoading(false); })
               .catch(err => { setError("Still failing to connect. Please try again."); setLoading(false); });
           }}
         >
@@ -99,7 +111,9 @@ export default function HomeScreen() {
         <View className="px-4 py-4 flex-row justify-between items-center">
           <TouchableOpacity className="flex-row items-center border border-surfaceDark rounded-full px-3 py-1.5">
             <Ionicons name="location" size={16} color="#1A6EB4" />
-            <Text className="text-label font-semibold text-textPrimary mx-1" numberOfLines={1}>Store 476CP...</Text>
+            <Text className="text-label font-semibold text-textPrimary mx-1" numberOfLines={1}>
+              {customer?.name ? customer.name.substring(0, 12) + '...' : 'Store 476CP...'}
+            </Text>
           </TouchableOpacity>
           
           <View className="flex-row items-center flex-1 justify-center mx-2">
@@ -139,15 +153,15 @@ export default function HomeScreen() {
           >
             <View>
               <Text className="text-white/80 text-label mb-1">Total Outstanding</Text>
-              <Text className="text-white text-heading font-bold">₹{dummyLedger.summary.totalOutstanding}</Text>
+              <Text className="text-white text-heading font-bold">
+                ₹{customer?.outstandingBalance ? customer.outstandingBalance.toFixed(2) : '0.00'}
+              </Text>
             </View>
             <View className="items-end">
-              <View className="bg-white/20 px-2 py-1 rounded-md mb-2">
-                <Text className="text-white text-[10px] font-bold">Credit Limit: ₹{dummyLedger.summary.creditLimit}</Text>
+              <View className="bg-white/20 px-3 py-1.5 rounded-full flex-row items-center">
+                <Text className="text-white text-[10px] font-bold mr-1">View Ledger</Text>
+                <Ionicons name="chevron-forward" size={12} color="white" />
               </View>
-              {dummyLedger.summary.overdue > 0 && (
-                <Text className="text-[#FFB3B3] text-[10px] font-bold">Overdue: ₹{dummyLedger.summary.overdue}</Text>
-              )}
             </View>
           </TouchableOpacity>
         </View>
