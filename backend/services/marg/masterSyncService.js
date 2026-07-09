@@ -14,7 +14,7 @@ const { margPost } = require('./margClient');
 const { decryptMargResponseToJson } = require('../../utils/margCrypto');
 const config = require('../../config');
 
-let cache = { products: [], customers: [], lastSyncedAt: null };
+let cache = { products: [], customers: [], categories: [], lastSyncedAt: null };
 let lastSyncTime = 0;
 
 /**
@@ -22,7 +22,7 @@ let lastSyncTime = 0;
  * Pass a `since` ISO datetime string for incremental sync — leave
  * blank/undefined for a full sync.
  */
-async function fetchRawMasterData(since = '') {
+async function fetchRawMasterData(since = '2000-01-01') {
   const body = {
     CompanyCode: config.marg.companyCode,
     MargID: config.marg.margId,
@@ -36,8 +36,40 @@ async function fetchRawMasterData(since = '') {
   return decryptMargResponseToJson(cipherText.replace(/^"|"$/g, ''), config.marg.decryptionKey);
 }
 
-/** Converts Marg's raw product record into the shape our app screens expect. */
-function mapProduct(margProduct) {
+/**
+ * Converts Marg's raw Stype record into a lookup entry.
+ * Stype is a GENERIC lookup table shared by categories, companies, areas,
+ * routes, and groups all at once, distinguished by `sgcode`. Field casing
+ * here is a best guess based on the doc's table headers (we haven't seen a
+ * live Stype record yet, unlike pro_N/Party which were confirmed against
+ * real data) — hence the fallback chains on every field. Once you've seen
+ * one real record (log it — see MARG_API_GUIDE.md Section 9), simplify this
+ * to match exactly and delete the unused fallback.
+ */
+function mapStype(margStype) {
+  const sgcode = margStype.Sgcode ?? margStype.sgcode;
+  const code = margStype.Scode ?? margStype.scode;
+  const name = margStype.Name ?? margStype.name;
+  const isDeleted = margStype.Is_Deleted ?? margStype.is_deleted;
+
+  return {
+    sgcode: sgcode?.toString().trim(),
+    code: code?.toString().trim(),
+    name: name?.toString().trim(),
+    isDeleted: isDeleted === '1' || isDeleted === 1,
+  };
+}
+
+/**
+ * Converts Marg's raw product record into the shape our app screens expect.
+ * @param {object} margProduct - raw Marg product record
+ * @param {object} categoryLookup - map of categoryCode -> categoryName, built
+ *   from Stype records in syncMasterData(). Pass {} if categories aren't
+ *   available yet — `category` will just come back null.
+ */
+function mapProduct(margProduct, categoryLookup = {}) {
+  const catCode = margProduct.catcode?.trim();
+
   return {
     id: margProduct.code?.trim(),
     name: margProduct.name?.trim(),
@@ -54,6 +86,10 @@ function mapProduct(margProduct) {
     scheme: margProduct.Deal && margProduct.Deal !== '0'
       ? `Buy ${margProduct.Deal} Get ${margProduct.Free} Free`
       : null,
+    categoryCode: catCode || null,
+    // Will be null until config.marg.categorySgcode is confirmed to match
+    // this account's real Stype data — see the config/index.js comment.
+    category: (catCode && categoryLookup[catCode]) || null,
     isDeleted: margProduct.Is_Deleted === '1',
   };
 }
@@ -76,20 +112,31 @@ function mapCustomer(margParty) {
 }
 
 /** Full sync — returns clean, app-shaped data. */
-async function syncMasterData(since = '') {
+async function syncMasterData(since = '2000-01-01') {
   const raw = await fetchRawMasterData(since);
   const details = raw.Details || raw; // structure may vary slightly by account/version
 
-  const products = [
-    ...(details.pro_N || []).map(mapProduct),
-    ...(details.pro_U || []).map(mapProduct),
-  ].filter(p => !p.isDeleted);
+  const lookups = (details.Stype || []).map(mapStype).filter((l) => !l.isDeleted);
 
-  const customers = (details.Party || []).map(mapCustomer).filter(c => !c.isDeleted);
+  // Categories are just the subset of Stype whose sgcode matches the
+  // configured "this means category" marker (config.marg.categorySgcode).
+  const categories = lookups.filter((l) => l.sgcode === config.marg.categorySgcode);
+  const categoryLookup = {};
+  categories.forEach((c) => {
+    categoryLookup[c.code] = c.name;
+  });
+
+  const products = [
+    ...(details.pro_N || []).map((p) => mapProduct(p, categoryLookup)),
+    ...(details.pro_U || []).map((p) => mapProduct(p, categoryLookup)),
+  ].filter((p) => !p.isDeleted);
+
+  const customers = (details.Party || []).map(mapCustomer).filter((c) => !c.isDeleted);
 
   return {
     products,
     customers,
+    categories,
     lastSyncedAt: raw.DateTime || new Date().toISOString(),
     status: raw.Status,
   };
@@ -109,4 +156,4 @@ async function getMasterData() {
   return cache;
 }
 
-module.exports = { getMasterData, syncMasterData, fetchRawMasterData, mapProduct, mapCustomer };
+module.exports = { getMasterData, syncMasterData, fetchRawMasterData, mapProduct, mapCustomer, mapStype };

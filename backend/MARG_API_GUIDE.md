@@ -153,10 +153,23 @@ Your app never talks to Marg directly — it calls **your backend's** clean endp
 | Your app calls... | Which internally calls Marg's... |
 |---|---|
 | `GET /api/products?search=...` | `MargMST2017` |
+| `GET /api/products/:id` | `MargMST2017` (single product lookup) |
+| `GET /api/categories` | `MargMST2017` (`Stype` records, filtered to category type) |
 | `GET /api/customer/:code` | `MargMST2017` (Party data) |
 | `GET /api/ledger/:customerCode` | `MargCorporateEDE` |
+| `GET /api/orders/:customerCode` | `MargCorporateEDE` (same bill data as ledger, filtered to Sales only) |
 | `POST /api/orders` | `InsertOrderDetail` (once per item) |
-| `GET /api/orders/status/:salesmanId` | `LiveOrderDispatchStatus2017` |
+| `GET /api/dispatch/:salesmanId` | `LiveOrderDispatchStatus2017` — renamed from the earlier `/orders/status/:salesmanId`, same logic |
+
+**Two design decisions worth knowing about, both flagged with comments in the code:**
+
+1. **`GET /categories`** filters `Stype` records by `sgcode === 'CATEGO'` — but that exact string
+   is a best guess from Marg's inconsistent docs, not yet confirmed against live data. Check
+   `config/index.js` and log a raw `Stype` record once to confirm/correct it.
+2. **`GET /orders/:customerCode`** reuses the same `MDis` bill data as the ledger endpoint,
+   filtered to `Type === 'S'` (Sales only). This means "order history" includes past orders
+   placed by phone/WhatsApp too, not just ones placed through this app — which is probably
+   what customers actually want to see, but confirm that assumption with your client.
 
 ---
 
@@ -205,9 +218,40 @@ I flagged these with `// CONFIRM` comments directly in the code too, but listing
 3. **Order status meaning** — I inferred Pending/Approved/Dispatched from which date fields (`DateSub`/`Dateisu`/`Datedis`) are populated. Confirm this is correct for your client's Marg configuration.
 4. **Multi-item orders** — confirm whether there's a batch order endpoint, since `InsertOrderDetail` appears to be one-product-per-call only.
 5. **`InsertOrderDetail` encryption** — confirm with Marg support whether this endpoint's response is encrypted or plain (the docs are ambiguous; I built defensive handling either way).
+6. **The category `Sgcode` value** (see Section 9 below) and **whether "order history" should include phone/WhatsApp orders**, not just app-placed ones.
 
 ---
 
-## 8. Next step
+## 9. Confirming the category lookup (`Stype`) shape
+
+`GET /api/categories` and the `category` field on products depend on two
+things Marg's docs don't fully pin down:
+
+1. **Field casing.** Every other object in `MargMST2017`'s response
+   (`pro_N`, `Party`) mixes `lowercase` and `ProperCase` field names in ways
+   we only know for certain because we tested them against live data. We
+   have NOT yet seen a real `Stype` record, so `mapStype()` in
+   `masterSyncService.js` defensively checks both casings for every field
+   (`margStype.Sgcode ?? margStype.sgcode`, etc.).
+2. **Which `Sgcode` value means "category."** The docs mention candidates
+   like `"CATEGO"` and `"CATGO"` inconsistently. `config/index.js` defaults
+   to `'CATEGO'` via `MARG_CATEGORY_SGCODE`, but this is a guess.
+
+**To confirm both at once:** temporarily log the raw `Stype` array the first
+time you call `GET /api/categories` or `GET /api/products` (which triggers
+the same sync) — e.g. inside `syncMasterData()`:
+```js
+console.log('Raw Stype sample:', JSON.stringify((details.Stype || []).slice(0, 10), null, 2));
+```
+Look at the actual field names and the different `Sgcode`/`sgcode` values
+present. Once confirmed:
+- If the casing differs from what `mapStype()` expects, simplify the
+  function to match exactly (delete the unused fallback).
+- Set `MARG_CATEGORY_SGCODE` in `.env` to whatever the real category marker
+  turns out to be, if it's not `"CATEGO"`.
+
+---
+
+## 10. Next step
 
 Once you confirm real credentials from your client, just update `backend/.env` with their values — nothing else in the code needs to change. The whole point of the service-layer structure above is that your React Native screens and Express routes stay exactly the same; only the `.env` file changes between demo and production.

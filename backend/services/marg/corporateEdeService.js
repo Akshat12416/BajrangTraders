@@ -56,9 +56,35 @@ function mapLedgerTransaction(mdis) {
   };
 }
 
+/**
+ * Maps the SAME Marg MDis bill record into an "order" card for the Order
+ * History screen. This is a deliberate design choice, not something spelled
+ * out explicitly in Marg's docs — worth confirming with your client:
+ *
+ * Marg's MDis records are completed BILLS/VOUCHERS (sale invoices), which
+ * for a wholesale distributor are effectively "past orders" — including
+ * ones placed by phone/WhatsApp before this app existed, which is likely
+ * what customers actually want to see in "Order History." If your client
+ * wants ONLY orders placed through this app specifically (excluding phone/
+ * WhatsApp orders), you'd need to track that distinction separately, since
+ * Marg's bill records don't indicate which channel an order came from.
+ */
+function mapOrderHistoryEntry(mdis) {
+  return {
+    id: `${mdis.Vouchar}`,
+    orderNo: mdis.VCN?.trim(),
+    date: mdis.Date,
+    total: parseFloat(mdis.Final) || 0,
+    voucherType: mdis.Type, // 'S' = Sale — only Sales are shown as "orders", see filter below
+    partyCode: mdis.CID?.trim(),
+  };
+}
+
 /** Gets the full ledger (all bills) for a customer, sorted newest first. */
 async function getCustomerLedger(customerCode, since = '') {
   const raw = await fetchCorporateData(since);
+  // Same defensive unwrap as masterSyncService.js — the real response nests
+  // everything one level under "Details" (confirmed against live data).
   const details = raw.Details || raw;
   const allBills = details.MDis || [];
 
@@ -68,4 +94,26 @@ async function getCustomerLedger(customerCode, since = '') {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-module.exports = { fetchCorporateData, getCustomerLedger, mapLedgerTransaction };
+/**
+ * Gets a customer's order history — the same underlying bill data as the
+ * ledger, filtered to Sales only (excludes purchase/return vouchers) and
+ * mapped as order cards instead of ledger rows.
+ */
+async function getCustomerOrderHistory(customerCode, since = '') {
+  const raw = await fetchCorporateData(since);
+  const details = raw.Details || raw;
+  const allBills = details.MDis || [];
+
+  return allBills
+    .filter(b => b.CID?.trim() === customerCode && b.Type === 'S')
+    .map(mapOrderHistoryEntry)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+module.exports = {
+  fetchCorporateData,
+  getCustomerLedger,
+  getCustomerOrderHistory,
+  mapLedgerTransaction,
+  mapOrderHistoryEntry,
+};

@@ -1,8 +1,9 @@
 /**
  * controllers/productController.js
  * ─────────────────────────────────────────────────────────────
- * Handles GET /api/products
- * Powers the Product List / Categories / Search screens.
+ * Handles:
+ *   GET /api/products         → Product List / Categories / Search screens
+ *   GET /api/products/:id     → Product Detail screen
  */
 
 const asyncHandler = require('../middleware/asyncHandler');
@@ -23,4 +24,17 @@ const listProducts = asyncHandler(async (req, res) => {
   res.json({ success: true, data: result });
 });
 
-module.exports = { listProducts };
+const getProductById = asyncHandler(async (req, res) => {
+  const { products } = await getMasterData();
+  const product = products.find((p) => p.id === req.params.id);
+
+  if (!product) {
+    const err = new Error('Product not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  res.json({ success: true, data: product });
+});
+
+module.exports = { listProducts, getProductById };

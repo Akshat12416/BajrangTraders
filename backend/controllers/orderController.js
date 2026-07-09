@@ -3,11 +3,17 @@
  * ─────────────────────────────────────────────────────────────
  * Handles:
  *   POST /api/orders               → Checkout screen "Place Order"
- *   GET  /api/orders/status/:id    → Order History screen
+ *   GET  /api/orders/:customerCode → Order History screen
+ *
+ * Dispatch/live tracking status now lives at GET /api/dispatch/:salesmanId
+ * (see controllers/dispatchController.js) — kept separate since it's a
+ * different Marg data source (LiveOrderDispatchStatus2017, salesman-keyed)
+ * from order history (Corporate EDE, customer-keyed).
  */
 
 const asyncHandler = require('../middleware/asyncHandler');
-const { placeOrder, getOrderDispatchStatus } = require('../services/marg/orderService');
+const { placeOrder } = require('../services/marg/orderService');
+const { getCustomerOrderHistory } = require('../services/marg/corporateEdeService');
 
 const createOrder = asyncHandler(async (req, res) => {
   const { customerId, customerName, customerMobile, salesmanId, items, meta } = req.body;
@@ -22,9 +28,9 @@ const createOrder = asyncHandler(async (req, res) => {
   res.json({ success: true, data: results });
 });
 
-const getOrderStatus = asyncHandler(async (req, res) => {
-  const result = await getOrderDispatchStatus(req.params.salesmanId);
-  res.json({ success: true, data: result.orders });
+const getOrderHistory = asyncHandler(async (req, res) => {
+  const orders = await getCustomerOrderHistory(req.params.customerCode);
+  res.json({ success: true, data: orders });
 });
 
-module.exports = { createOrder, getOrderStatus };
+module.exports = { createOrder, getOrderHistory };

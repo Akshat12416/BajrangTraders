@@ -11,7 +11,7 @@ const config = require('../../config');
 const margHttp = axios.create({
   baseURL: config.marg.baseUrl,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  timeout: 60000,
 });
 
 /**

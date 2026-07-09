@@ -1,10 +1,10 @@
 const router = require('express').Router();
-const { createOrder, getOrderStatus } = require('../controllers/orderController');
+const { createOrder, getOrderHistory } = require('../controllers/orderController');
 
 // POST /api/orders
 router.post('/', createOrder);
 
-// GET /api/orders/status/:salesmanId
-router.get('/status/:salesmanId', getOrderStatus);
+// GET /api/orders/GQ (customer code) — order history
+router.get('/:customerCode', getOrderHistory);
 
 module.exports = router;
