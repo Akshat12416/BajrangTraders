@@ -42,15 +42,36 @@ export default function CheckoutScreen() {
 
       await placeOrder(items, meta);
       
+      // Calculate total amount
+      const totalAmount = items.reduce((sum, item) => {
+        const price = item.product?.pricePerPiece || item.product?.mrp || item.price || 0;
+        return sum + (price * item.quantity);
+      }, 0);
+      
+      // Save to local pending orders store
+      const { useOrderStore } = require('../store/orderStore');
+      const addOrder = useOrderStore.getState().addOrder;
+      
+      const randomId = Math.floor(10000 + Math.random() * 90000); // 5 digit random number
+      addOrder({
+        id: 'ORD-' + randomId, // Generate a cleaner local dummy ID for tracking
+        date: new Date().toISOString(),
+        total: totalAmount,
+        items: [...items], // Clone items
+        status: 'Pending',
+        customerName,
+        shipAddress
+      });
+      
       if (Platform.OS === 'web') {
         window.alert('Order Successful!\n\nYour order has been placed in Marg ERP.');
         clearCart();
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/orders');
       } else {
         Alert.alert('Order Successful!', 'Your order has been placed in Marg ERP.', [
           { text: 'Great', onPress: () => {
             clearCart();
-            router.replace('/(tabs)');
+            router.replace('/(tabs)/orders');
           }}
         ]);
       }

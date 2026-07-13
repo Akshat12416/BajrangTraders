@@ -42,7 +42,7 @@ export default function OTPScreen() {
       const response = await verifyOtpApi(phone, otpString);
       
       // Save to auth store
-      login(phone, response.data.token, response.data.customer.id);
+      login(response.data.token, response.data.customer);
       
       router.replace('/(tabs)');
     } catch (err) {
