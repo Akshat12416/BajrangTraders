@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, ActivityIndicator, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cartStore';
 import { useRouter } from 'expo-router';
@@ -9,6 +9,11 @@ import { getCategories, getProductsByCategory } from '../../services/productServ
 import { getCustomerProfile } from '../../services/customerService';
 
 import { useAuthStore } from '../../store/authStore';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -22,6 +27,21 @@ export default function HomeScreen() {
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Debounce search text
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      // Trigger a smooth animation when switching between dashboard and search view
+      if ((searchText.length > 0 && searchQuery.length === 0) || (searchText.length === 0 && searchQuery.length > 0)) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      }
+      setSearchQuery(searchText);
+    }, 250); // 250ms delay
+    
+    return () => clearTimeout(handler);
+  }, [searchText]);
 
   const cartItems = useCartStore(state => state.items);
   const addItem = useCartStore(state => state.addItem);
@@ -114,6 +134,17 @@ export default function HomeScreen() {
 
   const allProducts = products.slice(0, 20);
 
+  // Client-Side Search Logic (Limited to 50 results to prevent UI freezing)
+  const filteredProducts = products.filter(p => {
+    if (!searchQuery) return false;
+    const q = searchQuery.toLowerCase();
+    return (
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.company && p.company.toLowerCase().includes(q)) ||
+      (p.id && p.id.toLowerCase().includes(q))
+    );
+  }).slice(0, 50);
+
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
@@ -151,218 +182,325 @@ export default function HomeScreen() {
               className="flex-1 mx-2 text-body"
               placeholder="Search products, SKU, brands..."
               placeholderTextColor="#B3B3B3"
+              value={searchText}
+              onChangeText={setSearchText}
+              autoCorrect={false}
             />
+            {searchText.length > 0 && (
+              <TouchableOpacity onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setSearchText('');
+                setSearchQuery('');
+              }}>
+                <Ionicons name="close-circle" size={20} color="#B3B3B3" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
-        {/* Outstanding Ledger Card */}
-        <View className="px-4 mb-6">
-          <TouchableOpacity 
-            className="w-full bg-[#1A6EB4] rounded-[20px] p-5 shadow-sm shadow-black/10 flex-row justify-between items-center"
-            onPress={() => router.push('/(tabs)/ledger')}
-            activeOpacity={0.9}
-          >
-            <View>
-              <Text className="text-white/80 text-label mb-1">Total Outstanding</Text>
-              <Text className="text-white text-heading font-bold">
-                ₹{customer?.outstandingBalance ? customer.outstandingBalance.toFixed(2) : '0.00'}
-              </Text>
+        {/* Dynamic Content based on Search */}
+        {searchQuery.length > 0 ? (
+          <View className="px-4 mt-2">
+            <Text className="text-title-sm font-bold text-textPrimary mb-4">
+              Search Results ({filteredProducts.length})
+            </Text>
+            {filteredProducts.length === 0 ? (
+              <View className="bg-white rounded-[20px] border border-[#F2F3F2] p-8 items-center justify-center mt-2">
+                <Ionicons name="search-outline" size={48} color="#E2E2E2" />
+                <Text className="text-body text-textSecondary mt-4 text-center">
+                  No products found matching "{searchQuery}"
+                </Text>
+              </View>
+            ) : (
+              <View className="flex-row flex-wrap justify-between gap-y-4">
+                {filteredProducts.map((prod, index) => {
+                  const qty = getItemQuantity(prod.id);
+                  return (
+                    <TouchableOpacity 
+                      key={`search-${prod.id}-${index}`} 
+                      className="w-[48%] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
+                      onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
+                      activeOpacity={0.8}
+                    >
+                      {/* Top Badges */}
+                      <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
+                        {prod.scheme ? (
+                          <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm max-w-[70%]">
+                            <Text className="text-[#1A6EB4] text-[10px] font-bold text-center" numberOfLines={2}>
+                              Deal: {prod.scheme}
+                            </Text>
+                          </View>
+                        ) : <View />}
+                        <TouchableOpacity>
+                          <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Image */}
+                      {prod.image ? (
+                        <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
+                      ) : (
+                        <View className="w-full h-[100px] mb-2 mt-4 rounded-lg bg-gray-100 items-center justify-center">
+                           <Ionicons name="cube-outline" size={40} color="#B3B3B3" />
+                        </View>
+                      )}
+
+                      {/* Title & SKU */}
+                      <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
+                      <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit} • Stock: {prod.stock}</Text>
+
+                      {/* Price & Controls */}
+                      <View className="flex-row justify-between items-end mt-auto">
+                        <View>
+                          <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.pricePerPiece || prod.mrp}</Text>
+                          {prod.mrp && prod.pricePerPiece && prod.mrp > prod.pricePerPiece && (
+                            <Text className="text-[10px] text-textSecondary line-through">₹{prod.mrp}</Text>
+                          )}
+                        </View>
+
+                        {qty > 0 ? (
+                          <View className="flex-row items-center bg-[#1A6EB4] rounded-lg h-8 shadow-sm shadow-black/10">
+                            <TouchableOpacity 
+                              className="w-7 h-full items-center justify-center"
+                              onPress={(e) => { e.stopPropagation(); updateQuantity(prod.id, qty - 1); }}
+                            >
+                              <Ionicons name="remove" size={16} color="white" />
+                            </TouchableOpacity>
+                            <Text className="text-white text-label font-bold min-w-[16px] text-center">{qty}</Text>
+                            <TouchableOpacity 
+                              className="w-7 h-full items-center justify-center"
+                              onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                            >
+                              <Ionicons name="add" size={16} color="white" />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity 
+                            className="w-8 h-8 bg-[#1A6EB4] rounded-lg items-center justify-center shadow-sm shadow-black/10"
+                            onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                          >
+                            <Ionicons name="add" size={20} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        ) : (
+          <View>
+            {/* Outstanding Ledger Card */}
+            <View className="px-4 mb-6">
+              <TouchableOpacity 
+                className="w-full bg-[#1A6EB4] rounded-[20px] p-5 shadow-sm shadow-black/10 flex-row justify-between items-center"
+                onPress={() => router.push('/(tabs)/ledger')}
+                activeOpacity={0.9}
+              >
+                <View>
+                  <Text className="text-white/80 text-label mb-1">Total Outstanding</Text>
+                  <Text className="text-white text-heading font-bold">
+                    ₹{customer?.outstandingBalance ? customer.outstandingBalance.toFixed(2) : '0.00'}
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <View className="bg-white/20 px-3 py-1.5 rounded-full flex-row items-center">
+                    <Text className="text-white text-[10px] font-bold mr-1">View Ledger</Text>
+                    <Ionicons name="chevron-forward" size={12} color="white" />
+                  </View>
+                </View>
+              </TouchableOpacity>
             </View>
-            <View className="items-end">
-              <View className="bg-white/20 px-3 py-1.5 rounded-full flex-row items-center">
-                <Text className="text-white text-[10px] font-bold mr-1">View Ledger</Text>
-                <Ionicons name="chevron-forward" size={12} color="white" />
+
+            {/* Categories */}
+            <View className="mb-6">
+              <View className="px-4 flex-row justify-between items-center mb-4">
+                <Text className="text-title-sm font-bold text-textPrimary">Categories 📦</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/categories')}>
+                  <Text className="text-body text-[#1A6EB4] font-semibold">See all</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
+                {categories.map((cat, index) => (
+                  <TouchableOpacity key={`${cat.code}-${index}`} className="items-center w-16" onPress={() => router.push(`/(tabs)/products?category=${cat.code}`)}>
+                    <View className="w-16 h-16 rounded-full bg-[#F0F6FA] items-center justify-center mb-2 overflow-hidden border border-[#E5E5E5]">
+                      {cat.image ? (
+                        <Image source={{ uri: cat.image }} className="w-12 h-12 rounded-full" resizeMode="cover" />
+                      ) : (
+                        <Ionicons name="folder-outline" size={24} color="#1A6EB4" />
+                      )}
+                    </View>
+                    <Text className="text-label text-textPrimary text-center" numberOfLines={1}>{cat.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Best Deals */}
+            <View className="mb-6">
+              <View className="px-4 flex-row justify-between items-center mb-4">
+                <Text className="text-title-sm font-bold text-textPrimary">Best deals 🔥</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/products')}>
+                  <Text className="text-body text-[#1A6EB4] font-semibold">See all</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
+                {deals.map((prod, index) => {
+                  const qty = getItemQuantity(prod.id);
+                  return (
+                    <TouchableOpacity 
+                      key={`deal-${prod.id}-${index}`} 
+                      className="w-[160px] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
+                      onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
+                      activeOpacity={0.8}
+                    >
+                      {/* Top Badges */}
+                      <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
+                        {prod.scheme ? (
+                          <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm">
+                            <Text className="text-[#1A6EB4] text-[10px] font-bold">Deal</Text>
+                          </View>
+                        ) : <View />}
+                        <TouchableOpacity>
+                          <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Image */}
+                      {prod.image ? (
+                        <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
+                      ) : (
+                        <View className="w-full h-[100px] mb-2 mt-4 rounded-lg bg-gray-100 items-center justify-center">
+                           <Ionicons name="cube-outline" size={40} color="#B3B3B3" />
+                        </View>
+                      )}
+                      
+                      {/* Title */}
+                      <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
+                      <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit}</Text>
+
+                      {/* Price & Controls */}
+                      <View className="flex-row justify-between items-end mt-auto">
+                        <View>
+                          <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.pricePerPiece || prod.mrp}</Text>
+                          {prod.mrp && prod.pricePerPiece && prod.mrp > prod.pricePerPiece && (
+                            <Text className="text-[10px] text-textSecondary line-through">₹{prod.mrp}</Text>
+                          )}
+                        </View>
+
+                        {qty > 0 ? (
+                          <View className="flex-row items-center bg-[#1A6EB4] rounded-lg h-8 shadow-sm shadow-black/10">
+                            <TouchableOpacity 
+                              className="w-7 h-full items-center justify-center"
+                              onPress={(e) => { e.stopPropagation(); updateQuantity(prod.id, qty - 1); }}
+                            >
+                              <Ionicons name="remove" size={16} color="white" />
+                            </TouchableOpacity>
+                            <Text className="text-white text-label font-bold min-w-[16px] text-center">{qty}</Text>
+                            <TouchableOpacity 
+                              className="w-7 h-full items-center justify-center"
+                              onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                            >
+                              <Ionicons name="add" size={16} color="white" />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity 
+                            className="w-8 h-8 bg-[#1A6EB4] rounded-lg items-center justify-center shadow-sm shadow-black/10"
+                            onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                          >
+                            <Ionicons name="add" size={20} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* All Products Grid */}
+            <View className="px-4 mt-6">
+              <Text className="text-title-sm font-bold text-textPrimary mb-4">All Products</Text>
+              <View className="flex-row flex-wrap justify-between gap-y-4">
+                {allProducts.map((prod, index) => {
+                  const qty = getItemQuantity(prod.id);
+                  return (
+                    <TouchableOpacity 
+                      key={`all-${prod.id}-${index}`} 
+                      className="w-[48%] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
+                      onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
+                      activeOpacity={0.8}
+                    >
+                      {/* Top Badges */}
+                      <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
+                        {prod.scheme ? (
+                          <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm max-w-[70%]">
+                            <Text className="text-[#1A6EB4] text-[10px] font-bold text-center" numberOfLines={2}>
+                              Deal: {prod.scheme}
+                            </Text>
+                          </View>
+                        ) : <View />}
+                        <TouchableOpacity>
+                          <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Image */}
+                      {prod.image ? (
+                        <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
+                      ) : (
+                        <View className="w-full h-[100px] mb-2 mt-4 rounded-lg bg-gray-100 items-center justify-center">
+                           <Ionicons name="cube-outline" size={40} color="#B3B3B3" />
+                        </View>
+                      )}
+
+                      {/* Title & SKU */}
+                      <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
+                      <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit} • Stock: {prod.stock}</Text>
+
+                      {/* Price & Controls */}
+                      <View className="flex-row justify-between items-end mt-auto">
+                        <View>
+                          <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.pricePerPiece || prod.mrp}</Text>
+                          {prod.mrp && prod.pricePerPiece && prod.mrp > prod.pricePerPiece && (
+                            <Text className="text-[10px] text-textSecondary line-through">₹{prod.mrp}</Text>
+                          )}
+                        </View>
+
+                        {qty > 0 ? (
+                          <View className="flex-row items-center bg-[#1A6EB4] rounded-lg h-8 shadow-sm shadow-black/10">
+                            <TouchableOpacity 
+                              className="w-7 h-full items-center justify-center"
+                              onPress={(e) => { e.stopPropagation(); updateQuantity(prod.id, qty - 1); }}
+                            >
+                              <Ionicons name="remove" size={16} color="white" />
+                            </TouchableOpacity>
+                            <Text className="text-white text-label font-bold min-w-[16px] text-center">{qty}</Text>
+                            <TouchableOpacity 
+                              className="w-7 h-full items-center justify-center"
+                              onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                            >
+                              <Ionicons name="add" size={16} color="white" />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity 
+                            className="w-8 h-8 bg-[#1A6EB4] rounded-lg items-center justify-center shadow-sm shadow-black/10"
+                            onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
+                          >
+                            <Ionicons name="add" size={20} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Categories */}
-        <View className="mb-6">
-          <View className="px-4 flex-row justify-between items-center mb-4">
-            <Text className="text-title-sm font-bold text-textPrimary">Categories 📦</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/categories')}>
-              <Text className="text-body text-[#1A6EB4] font-semibold">See all</Text>
-            </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
-            {categories.map((cat, index) => (
-              <TouchableOpacity key={`${cat.code}-${index}`} className="items-center w-16" onPress={() => router.push(`/(tabs)/products?category=${cat.code}`)}>
-                <View className="w-16 h-16 rounded-full bg-[#F0F6FA] items-center justify-center mb-2 overflow-hidden border border-[#E5E5E5]">
-                  {cat.image ? (
-                    <Image source={{ uri: cat.image }} className="w-12 h-12 rounded-full" resizeMode="cover" />
-                  ) : (
-                    <Ionicons name="folder-outline" size={24} color="#1A6EB4" />
-                  )}
-                </View>
-                <Text className="text-label text-textPrimary text-center" numberOfLines={1}>{cat.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Best Deals */}
-        <View className="mb-6">
-          <View className="px-4 flex-row justify-between items-center mb-4">
-            <Text className="text-title-sm font-bold text-textPrimary">Best deals 🔥</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/products')}>
-              <Text className="text-body text-[#1A6EB4] font-semibold">See all</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
-            {deals.map((prod, index) => {
-              const qty = getItemQuantity(prod.id);
-              return (
-                <TouchableOpacity 
-                  key={`deal-${prod.id}-${index}`} 
-                  className="w-[160px] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
-                  onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
-                  activeOpacity={0.8}
-                >
-                  {/* Top Badges */}
-                  <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
-                    {prod.scheme ? (
-                      <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm">
-                        <Text className="text-[#1A6EB4] text-[10px] font-bold">Deal</Text>
-                      </View>
-                    ) : <View />}
-                    <TouchableOpacity>
-                      <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Image */}
-                  {prod.image ? (
-                    <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
-                  ) : (
-                    <View className="w-full h-[100px] mb-2 mt-4 rounded-lg bg-gray-100 items-center justify-center">
-                       <Ionicons name="cube-outline" size={40} color="#B3B3B3" />
-                    </View>
-                  )}
-                  
-                  {/* Title */}
-                  <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
-                  <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit}</Text>
-
-                  {/* Price & Controls */}
-                  <View className="flex-row justify-between items-end mt-auto">
-                    <View>
-                      <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.pricePerPiece || prod.mrp}</Text>
-                      {prod.mrp && prod.pricePerPiece && prod.mrp > prod.pricePerPiece && (
-                        <Text className="text-[10px] text-textSecondary line-through">₹{prod.mrp}</Text>
-                      )}
-                    </View>
-
-                    {qty > 0 ? (
-                      <View className="flex-row items-center bg-[#1A6EB4] rounded-lg h-8 shadow-sm shadow-black/10">
-                        <TouchableOpacity 
-                          className="w-7 h-full items-center justify-center"
-                          onPress={(e) => { e.stopPropagation(); updateQuantity(prod.id, qty - 1); }}
-                        >
-                          <Ionicons name="remove" size={16} color="white" />
-                        </TouchableOpacity>
-                        <Text className="text-white text-label font-bold min-w-[16px] text-center">{qty}</Text>
-                        <TouchableOpacity 
-                          className="w-7 h-full items-center justify-center"
-                          onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
-                        >
-                          <Ionicons name="add" size={16} color="white" />
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <TouchableOpacity 
-                        className="w-8 h-8 bg-[#1A6EB4] rounded-lg items-center justify-center shadow-sm shadow-black/10"
-                        onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
-                      >
-                        <Ionicons name="add" size={20} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* All Products Grid */}
-        <View className="px-4 mt-6">
-          <Text className="text-title-sm font-bold text-textPrimary mb-4">All Products</Text>
-          <View className="flex-row flex-wrap justify-between gap-y-4">
-            {allProducts.map((prod, index) => {
-              const qty = getItemQuantity(prod.id);
-              return (
-                <TouchableOpacity 
-                  key={`all-${prod.id}-${index}`} 
-                  className="w-[48%] bg-white rounded-[20px] p-3 border border-surfaceDark shadow-sm shadow-black/5 relative"
-                  onPress={() => router.push({ pathname: '/product-detail', params: { productId: prod.id } })}
-                  activeOpacity={0.8}
-                >
-                  {/* Top Badges */}
-                  <View className="flex-row justify-between z-10 absolute top-0 left-0 right-0 p-3">
-                    {prod.scheme ? (
-                      <View className="bg-[#E6F3FA] px-1.5 py-0.5 rounded-sm max-w-[70%]">
-                        <Text className="text-[#1A6EB4] text-[10px] font-bold text-center" numberOfLines={2}>
-                          Deal: {prod.scheme}
-                        </Text>
-                      </View>
-                    ) : <View />}
-                    <TouchableOpacity>
-                      <Ionicons name="heart-outline" size={18} color="#B3B3B3" />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Image */}
-                  {prod.image ? (
-                    <Image source={{ uri: prod.image }} className="w-full h-[100px] mb-2 mt-4 rounded-lg" resizeMode="contain" />
-                  ) : (
-                    <View className="w-full h-[100px] mb-2 mt-4 rounded-lg bg-gray-100 items-center justify-center">
-                       <Ionicons name="cube-outline" size={40} color="#B3B3B3" />
-                    </View>
-                  )}
-
-                  {/* Title & SKU */}
-                  <Text className="text-label text-textPrimary" numberOfLines={2}>{prod.name}</Text>
-                  <Text className="text-[10px] text-textSecondary mt-0.5 mb-3">{prod.unit} • Stock: {prod.stock}</Text>
-
-                  {/* Price & Controls */}
-                  <View className="flex-row justify-between items-end mt-auto">
-                    <View>
-                      <Text className="text-[16px] font-bold text-[#E2523A]">₹{prod.pricePerPiece || prod.mrp}</Text>
-                      {prod.mrp && prod.pricePerPiece && prod.mrp > prod.pricePerPiece && (
-                        <Text className="text-[10px] text-textSecondary line-through">₹{prod.mrp}</Text>
-                      )}
-                    </View>
-
-                    {qty > 0 ? (
-                      <View className="flex-row items-center bg-[#1A6EB4] rounded-lg h-8 shadow-sm shadow-black/10">
-                        <TouchableOpacity 
-                          className="w-7 h-full items-center justify-center"
-                          onPress={(e) => { e.stopPropagation(); updateQuantity(prod.id, qty - 1); }}
-                        >
-                          <Ionicons name="remove" size={16} color="white" />
-                        </TouchableOpacity>
-                        <Text className="text-white text-label font-bold min-w-[16px] text-center">{qty}</Text>
-                        <TouchableOpacity 
-                          className="w-7 h-full items-center justify-center"
-                          onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
-                        >
-                          <Ionicons name="add" size={16} color="white" />
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <TouchableOpacity 
-                        className="w-8 h-8 bg-[#1A6EB4] rounded-lg items-center justify-center shadow-sm shadow-black/10"
-                        onPress={(e) => { e.stopPropagation(); handleAddToCart(prod); }}
-                      >
-                        <Ionicons name="add" size={20} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+        )}
 
       </ScrollView>
 
