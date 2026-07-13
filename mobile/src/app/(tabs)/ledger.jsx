@@ -5,24 +5,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getLedgerHistory } from '../../services/ledgerService';
+import { useAuthStore } from '../../store/authStore';
 
 export default function LedgerScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   
+  const customerId = useAuthStore(state => state.customer?.id);
+
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchLedger();
-  }, []);
+    if (customerId) {
+      fetchLedger();
+    }
+  }, [customerId]);
 
   const fetchLedger = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getLedgerHistory();
+      const data = await getLedgerHistory(customerId);
       setTransactions(data);
     } catch (err) {
       setError(err.message || 'Failed to load ledger history');

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
@@ -12,6 +12,9 @@ export default function OTPScreen() {
   const insets = useSafeAreaInsets();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef([]);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (text, index) => {
     const newOtp = [...otp];
@@ -30,9 +33,23 @@ export default function OTPScreen() {
 
   const isComplete = otp.every(d => d !== '');
 
-  const handleVerify = () => {
-    login(phone || '9999999999', 'dummy-token', 'CUST-123');
-    router.replace('/(tabs)');
+  const handleVerify = async () => {
+    const otpString = otp.join('');
+    setLoading(true);
+    setError(null);
+    try {
+      const { verifyOtpApi } = require('../../services/authService');
+      const response = await verifyOtpApi(phone, otpString);
+      
+      // Save to auth store
+      login(phone, response.data.token, response.data.customer.id);
+      
+      router.replace('/(tabs)');
+    } catch (err) {
+      setError(err.message || 'Invalid OTP');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -81,16 +98,23 @@ export default function OTPScreen() {
           <Text className="text-[#1A6EB4] font-bold text-body">60s</Text>
         </View>
 
+        {/* Error Message */}
+        {error && <Text className="text-error text-center mb-4">{error}</Text>}
+
         {/* Spacer */}
         <View className="flex-1" />
 
         {/* Verify Button */}
         <TouchableOpacity
-          className={`h-[56px] rounded-2xl items-center justify-center shadow-sm shadow-black/10 ${isComplete ? 'bg-[#1A6EB4]' : 'bg-[#B3B3B3]'}`}
+          className={`h-[56px] rounded-2xl items-center justify-center shadow-sm shadow-black/10 ${isComplete && !loading ? 'bg-[#1A6EB4]' : 'bg-[#B3B3B3]'}`}
           onPress={handleVerify}
-          disabled={!isComplete}
+          disabled={!isComplete || loading}
         >
-          <Text className="text-white font-bold text-body-md">Verify & Continue</Text>
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text className="text-white font-bold text-body-md">Verify & Continue</Text>
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

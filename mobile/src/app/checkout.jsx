@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCartStore } from '../store/cartStore';
+import { useAuthStore } from '../store/authStore';
 import { placeOrder } from '../services/orderService';
 
 export default function CheckoutScreen() {
@@ -11,14 +12,15 @@ export default function CheckoutScreen() {
   const router = useRouter();
   
   const { items, clearCart } = useCartStore();
+  const customer = useAuthStore(state => state.customer);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   // Form State
-  const [customerName, setCustomerName] = useState('ABC PVT LTD');
-  const [customerMobile, setCustomerMobile] = useState('9289757820');
-  const [shipName, setShipName] = useState('Demo Store Front');
-  const [shipAddress, setShipAddress] = useState('123 Main St, Tech Park');
-  const [orderRemarks, setOrderRemarks] = useState('Please deliver before 5 PM');
+  const [customerName, setCustomerName] = useState(customer?.name || '');
+  const [customerMobile, setCustomerMobile] = useState(customer?.phone || '');
+  const [shipName, setShipName] = useState(customer?.name || '');
+  const [shipAddress, setShipAddress] = useState(customer?.address || '');
+  const [orderRemarks, setOrderRemarks] = useState('');
 
   const handleConfirmOrder = async () => {
     if (!customerName || !customerMobile || !shipAddress) {
@@ -29,7 +31,7 @@ export default function CheckoutScreen() {
     setIsCheckingOut(true);
     try {
       const meta = {
-        customerId: '6732867', // Hardcoded demo customer for now
+        customerId: customer?.id || '6732867', // fallback to demo id if something goes wrong
         customerName,
         customerMobile,
         salesmanId: '001',

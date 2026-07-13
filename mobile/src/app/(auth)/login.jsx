@@ -1,17 +1,29 @@
-import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { sendOtpApi } from '../../services/authService';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const insets = useSafeAreaInsets();
 
-  const handleSendOTP = () => {
-    if (phone.length >= 10) {
-      router.push({ pathname: '/(auth)/otp', params: { phone } });
+  const handleSendOTP = async () => {
+    if (phone.length === 10) {
+      setLoading(true);
+      setError(null);
+      try {
+        await sendOtpApi(phone);
+        router.push({ pathname: '/(auth)/otp', params: { phone } });
+      } catch (err) {
+        setError(err.message || 'Something went wrong');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -38,7 +50,7 @@ export default function LoginScreen() {
         {/* Form Section */}
         <View className="mt-10">
           <Text className="text-label font-semibold text-textSecondary mb-2 ml-1">PHONE NUMBER</Text>
-          <View className="flex-row items-center h-[56px] bg-white border border-surfaceDark rounded-2xl px-4 mb-6">
+          <View className="flex-row items-center h-[56px] bg-white border border-surfaceDark rounded-2xl px-4 mb-2">
             <View className="flex-row items-center mr-3 pr-3 border-r border-surfaceDark">
               <Text className="text-body-md font-semibold text-textPrimary">🇮🇳 +91</Text>
             </View>
@@ -49,16 +61,26 @@ export default function LoginScreen() {
               keyboardType="phone-pad"
               maxLength={10}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text) => {
+                setPhone(text);
+                setError(null);
+              }}
             />
           </View>
 
+          {error && <Text className="text-error text-label mb-4">{error}</Text>}
+          {!error && <View className="h-4" />}
+
           <TouchableOpacity
-            className={`h-[56px] rounded-2xl items-center justify-center shadow-sm shadow-black/10 ${phone.length >= 10 ? 'bg-[#1A6EB4]' : 'bg-[#B3B3B3]'}`}
+            className={`h-[56px] rounded-2xl items-center justify-center shadow-sm shadow-black/10 ${phone.length >= 10 && !loading ? 'bg-[#1A6EB4]' : 'bg-[#B3B3B3]'}`}
             onPress={handleSendOTP}
-            disabled={phone.length < 10}
+            disabled={phone.length < 10 || loading}
           >
-            <Text className="text-white font-bold text-body-md">Send OTP</Text>
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-body-md">Send OTP</Text>
+            )}
           </TouchableOpacity>
         </View>
 

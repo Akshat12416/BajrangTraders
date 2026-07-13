@@ -4,25 +4,32 @@ import { useRouter } from 'expo-router';
 import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomerProfile } from '../services/customerService';
+import { useAuthStore } from '../store/authStore';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  const customerId = useAuthStore(state => state.customer?.id);
+  const logout = useAuthStore(state => state.logout);
 
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (customerId) {
+      fetchProfile();
+    } else {
+      handleLogout();
+    }
+  }, [customerId]);
 
   const fetchProfile = async () => {
     setLoading(true);
     setError(null);
     try {
-      // By default, this uses our demo customer 6732867
-      const data = await getCustomerProfile();
+      const data = await getCustomerProfile(customerId);
       setCustomer(data);
     } catch (err) {
       setError(err.message || 'Failed to load profile');
@@ -32,7 +39,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    // In a real app we'd clear auth state here
+    logout();
     router.replace('/(auth)/login');
   };
 

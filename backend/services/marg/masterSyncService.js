@@ -96,15 +96,24 @@ function mapProduct(margProduct, categoryLookup = {}) {
 
 /** Converts Marg's raw Party (customer/ledger) record into our app's shape. */
 function mapCustomer(margParty) {
+  const id = margParty.code?.trim() || margParty.LedgerCode?.trim();
+  let phone = margParty.phone1?.trim() || margParty.phone2?.trim() || '';
+  
+  // Inject test phone number for the demo customer (AEEV / ABC PVT LTD)
+  // because the Marg demo database left the phone field blank.
+  if (id === 'AEEV') {
+    phone = '9289757820';
+  }
+
   return {
-    id: margParty.code?.trim() || margParty.LedgerCode?.trim(),
+    id,
     name: margParty.name?.trim(),
     address: margParty.address?.trim(),
     // Single running balance — NOT itemized. For transaction history, see
     // corporateEdeService.js (MDis records).
     outstandingBalance: parseFloat(margParty.balance) || 0,
     creditLimit: null, // Not returned here — check Corporate EDE (Party.Credit)
-    phone: margParty.phone1?.trim() || margParty.phone2?.trim() || '',
+    phone,
     email: margParty.email1?.trim() || '',
     gstNo: margParty.GSTIN?.trim() || '',
     isDeleted: margParty.Is_Deleted === '1',

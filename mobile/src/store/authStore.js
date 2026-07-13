@@ -3,18 +3,15 @@ import { create } from 'zustand';
 export const useAuthStore = create((set) => ({
   isLoggedIn: false,
   token: null,
-  customerId: null,
-  phoneNumber: null,
-  login: (phone, token, customerId) => set({
+  customer: null,
+  login: (token, customer) => set({
     isLoggedIn: true,
     token,
-    customerId,
-    phoneNumber: phone
+    customer,
   }),
   logout: () => set({
     isLoggedIn: false,
     token: null,
-    customerId: null,
-    phoneNumber: null
+    customer: null,
   })
 }));

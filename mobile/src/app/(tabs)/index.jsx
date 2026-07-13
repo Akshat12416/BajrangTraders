@@ -8,10 +8,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getCategories, getProductsByCategory } from '../../services/productService';
 import { getCustomerProfile } from '../../services/customerService';
 
+import { useAuthStore } from '../../store/authStore';
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
+  const customerId = useAuthStore(state => state.customer?.id);
+  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [customer, setCustomer] = useState(null);
@@ -23,11 +28,17 @@ export default function HomeScreen() {
   const updateQuantity = useCartStore(state => state.updateQuantity);
 
   useEffect(() => {
+    // Redirect to login if not logged in
+    if (!isLoggedIn) {
+      router.replace('/(auth)/login');
+      return;
+    }
+
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const custPromise = getCustomerProfile().catch(err => {
+        const custPromise = getCustomerProfile(customerId).catch(err => {
           console.warn("Failed to fetch customer profile on home screen", err);
           return null;
         });
@@ -35,7 +46,7 @@ export default function HomeScreen() {
         const [cats, prods, cust] = await Promise.all([
           getCategories(),
           getProductsByCategory(), // null category gets all products
-          custPromise // fetches demo customer 6732867
+          custPromise
         ]);
         setCategories(cats);
         setProducts(prods);
@@ -48,7 +59,7 @@ export default function HomeScreen() {
       }
     };
     fetchData();
-  }, []);
+  }, [isLoggedIn, customerId]);
 
   const getItemQuantity = (productId) => {
     const item = cartItems.find(i => i.productId === productId);
@@ -81,7 +92,7 @@ export default function HomeScreen() {
           onPress={() => {
             setLoading(true);
             setError(null);
-            const custPromise = getCustomerProfile().catch(err => {
+            const custPromise = getCustomerProfile(customerId).catch(err => {
               console.warn("Failed to fetch customer profile on home screen", err);
               return null;
             });

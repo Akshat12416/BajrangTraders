@@ -4,24 +4,29 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getOrderHistory } from '../../services/historyService';
+import { useAuthStore } from '../../store/authStore';
 
 export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   
+  const customerId = useAuthStore(state => state.customer?.id);
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (customerId) {
+      fetchOrders();
+    }
+  }, [customerId]);
 
   const fetchOrders = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getOrderHistory();
+      const data = await getOrderHistory(customerId);
       setOrders(data);
     } catch (err) {
       setError(err.message || 'Failed to load order history');
