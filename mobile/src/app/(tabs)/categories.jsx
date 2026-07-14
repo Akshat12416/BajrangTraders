@@ -4,31 +4,19 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getCategories } from '../../services/productService';
+import { useCatalogStore } from '../../store/catalogStore';
 
 export default function CategoriesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getCategories();
-      setCategories(data);
-    } catch (err) {
-      setError('Failed to load categories. Please check your connection.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { categories, loading, error, fetchCatalog } = useCatalogStore();
 
   useEffect(() => {
-    fetchCategories();
+    // Only fetch if we don't have categories yet
+    if (categories.length === 0) {
+      fetchCatalog();
+    }
   }, []);
 
   return (
