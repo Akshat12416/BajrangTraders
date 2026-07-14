@@ -13,6 +13,7 @@ export default function OrdersScreen() {
   
   const customerId = useAuthStore(state => state.customer?.id);
   const pendingOrders = useOrderStore(state => state.pendingOrders);
+  const setBilledOrders = useOrderStore(state => state.setBilledOrders);
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ export default function OrdersScreen() {
     try {
       const data = await getOrderHistory(customerId);
       setOrders(data);
+      setBilledOrders(data);
     } catch (err) {
       setError(err.message || 'Failed to load order history');
     } finally {
@@ -42,6 +44,7 @@ export default function OrdersScreen() {
       key={order.id}
       className="bg-white rounded-[20px] p-5 mb-4 border border-[#F2F3F2] shadow-sm shadow-black/5"
       activeOpacity={0.7}
+      onPress={() => router.push({ pathname: '/order-detail', params: { orderId: order.id, isPending: isPending ? 'true' : 'false' } })}
     >
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center">
@@ -67,7 +70,7 @@ export default function OrdersScreen() {
           <Text className="text-label text-textSecondary mb-1">{order.items.length} Items:</Text>
           {order.items.slice(0, 2).map((item, idx) => (
             <Text key={idx} className="text-label font-semibold text-textPrimary" numberOfLines={1}>
-              {item.quantity}x {item.name}
+              {item.quantity}x {item.product?.name || item.name || 'Unknown Item'}
             </Text>
           ))}
           {order.items.length > 2 && (
