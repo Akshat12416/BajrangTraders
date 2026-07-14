@@ -55,9 +55,6 @@ export default function ProfileScreen() {
             </Text>
             <Text className="text-body text-textSecondary">{customer.phone}</Text>
           </View>
-          <TouchableOpacity className="w-10 h-10 items-center justify-center">
-            <Ionicons name="pencil" size={20} color="#1A6EB4" />
-          </TouchableOpacity>
         </View>
 
         {/* Business Details */}
