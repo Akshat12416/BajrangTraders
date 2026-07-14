@@ -5,10 +5,9 @@ import { useCartStore } from '../../store/cartStore';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getCategories, getProductsByCategory } from '../../services/productService';
 import { getCustomerProfile } from '../../services/customerService';
-
 import { useAuthStore } from '../../store/authStore';
+import { useCatalogStore } from '../../store/catalogStore';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -22,11 +21,12 @@ export default function HomeScreen() {
   const customerId = useAuthStore(state => state.customer?.id);
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
 
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
   const [customer, setCustomer] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loadingCustomer, setLoadingCustomer] = useState(true);
+  const [errorCustomer, setErrorCustomer] = useState(null);
+  
+  const { products, categories, loading: loadingCatalog, error: errorCatalog, fetchCatalog } = useCatalogStore();
+  
   const [searchText, setSearchText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -56,26 +56,22 @@ export default function HomeScreen() {
 
     const fetchData = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        const custPromise = getCustomerProfile(customerId).catch(err => {
+        setLoadingCustomer(true);
+        setErrorCustomer(null);
+        
+        // Trigger background catalog sync
+        fetchCatalog();
+
+        const cust = await getCustomerProfile(customerId).catch(err => {
           console.warn("Failed to fetch customer profile on home screen", err);
           return null;
         });
-
-        const [cats, prods, cust] = await Promise.all([
-          getCategories(),
-          getProductsByCategory(), // null category gets all products
-          custPromise
-        ]);
-        setCategories(cats);
-        setProducts(prods);
         setCustomer(cust);
       } catch (err) {
-        setError("Failed to load data. Please check your connection.");
+        setErrorCustomer("Failed to load customer data.");
         console.error("Home API Error:", err);
       } finally {
-        setLoading(false);
+        setLoadingCustomer(false);
       }
     };
     fetchData();
@@ -95,7 +91,9 @@ export default function HomeScreen() {
     }
   };
 
-  if (loading) {
+  // Only show full loading spinner if BOTH catalog and customer are loading
+  // and we don't have offline catalog data yet
+  if ((loadingCustomer && !customer) || (loadingCatalog && products.length === 0)) {
     return (
       <View className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator size="large" color="#1A6EB4" />
@@ -103,23 +101,13 @@ export default function HomeScreen() {
     );
   }
 
-  if (error) {
+  if (errorCatalog && products.length === 0) {
     return (
       <View className="flex-1 bg-background items-center justify-center p-6">
-        <Text className="text-body text-textSecondary text-center mb-4">{error}</Text>
+        <Text className="text-body text-textSecondary text-center mb-4">{errorCatalog}</Text>
         <TouchableOpacity 
           className="bg-[#1A6EB4] px-6 py-2 rounded-full"
-          onPress={() => {
-            setLoading(true);
-            setError(null);
-            const custPromise = getCustomerProfile(customerId).catch(err => {
-              console.warn("Failed to fetch customer profile on home screen", err);
-              return null;
-            });
-            Promise.all([getCategories(), getProductsByCategory(), custPromise])
-              .then(([cats, prods, cust]) => { setCategories(cats); setProducts(prods); setCustomer(cust); setLoading(false); })
-              .catch(err => { setError("Still failing to connect. Please try again."); setLoading(false); });
-          }}
+          onPress={fetchCatalog}
         >
           <Text className="text-white font-bold">Retry</Text>
         </TouchableOpacity>
