@@ -7,9 +7,9 @@
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
-const connectDB = require('./config/db');
-const { errorHandler, notFound } = require('./middleware/errorMiddleware');
+const config = require('./config');
 const routes = require('./routes');
+const errorHandler = require('./middleware/errorHandler');
 const { warmupCache } = require('./services/marg/masterSyncService');
 
 const app = express();
@@ -26,8 +26,6 @@ app.use('/api', routes);
 
 // Must be registered LAST — catches errors from every route above
 app.use(errorHandler);
-
-const { warmupCache } = require('./services/marg/masterSyncService');
 
 app.listen(config.port, () => {
   console.log(`Backend running on http://localhost:${config.port}`);
