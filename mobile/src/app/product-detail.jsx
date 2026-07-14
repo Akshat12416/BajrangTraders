@@ -3,8 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCartStore } from '../store/cartStore';
-import dummyProducts from '../data/dummyProducts.json';
-import dummyCategories from '../data/dummyCategories.json';
+import { useCatalogStore } from '../store/catalogStore';
 
 export default function ProductDetailScreen() {
   const { productId } = useLocalSearchParams();
@@ -15,11 +14,24 @@ export default function ProductDetailScreen() {
   const cartItems = useCartStore(state => state.items);
   const addItem = useCartStore(state => state.addItem);
   const updateQuantity = useCartStore(state => state.updateQuantity);
+  
+  const allProducts = useCatalogStore(state => state.products);
+  const allCategories = useCatalogStore(state => state.categories);
 
-  const product = dummyProducts.find(p => p.id === productId);
-  if (!product) return null;
+  const product = allProducts.find(p => p.id === productId);
+  
+  if (!product) {
+    return (
+      <View className="flex-1 bg-background justify-center items-center">
+        <Text className="text-textSecondary">Product not found.</Text>
+        <TouchableOpacity onPress={() => router.back()} className="mt-4 bg-[#1A6EB4] px-6 py-2 rounded-full">
+          <Text className="text-white font-bold">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
-  const category = dummyCategories.find(c => c.id === product.categoryId);
+  const category = allCategories.find(c => c.code === product.categoryCode);
   
   const itemInCart = cartItems.find(i => i.productId === product.id);
   const qty = itemInCart ? itemInCart.quantity : 0;
@@ -72,11 +84,15 @@ export default function ProductDetailScreen() {
 
           {/* Price */}
           <View className="flex-row items-center mt-3 mb-6">
-            <Text className="text-heading font-bold text-[#E2523A] mr-3">₹{product.discountPrice}</Text>
-            <Text className="text-body text-textSecondary line-through mr-2">₹{product.originalPrice}</Text>
-            <View className="bg-[#E6F3FA] px-2 py-0.5 rounded-full">
-              <Text className="text-[#1A6EB4] text-label font-bold">{product.discountPercentage}</Text>
-            </View>
+            <Text className="text-heading font-bold text-[#E2523A] mr-3">₹{product.pricePerPiece}</Text>
+            {product.mrp > product.pricePerPiece && (
+              <Text className="text-body text-textSecondary line-through mr-2">₹{product.mrp}</Text>
+            )}
+            {product.scheme && (
+              <View className="bg-[#E6F3FA] px-2 py-0.5 rounded-full">
+                <Text className="text-[#1A6EB4] text-label font-bold">{product.scheme}</Text>
+              </View>
+            )}
           </View>
 
           {/* Divider */}
@@ -88,7 +104,7 @@ export default function ProductDetailScreen() {
           <View className="flex-row flex-wrap gap-y-4 mb-6">
             <View className="w-1/2">
               <Text className="text-label text-textSecondary">SKU</Text>
-              <Text className="text-body font-semibold text-textPrimary">{product.sku}</Text>
+              <Text className="text-body font-semibold text-textPrimary">{product.id}</Text>
             </View>
             <View className="w-1/2">
               <Text className="text-label text-textSecondary">Company</Text>
@@ -100,8 +116,8 @@ export default function ProductDetailScreen() {
             </View>
             <View className="w-1/2">
               <Text className="text-label text-textSecondary">Availability</Text>
-              <Text className={`text-body font-semibold ${product.inStock ? 'text-success' : 'text-error'}`}>
-                {product.inStock ? 'In Stock' : 'Out of Stock'}
+              <Text className={`text-body font-semibold ${product.stock > 0 ? 'text-success' : 'text-error'}`}>
+                {product.stock > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}
               </Text>
             </View>
           </View>
@@ -140,7 +156,7 @@ export default function ProductDetailScreen() {
             </View>
             {/* Total */}
             <View className="flex-1 ml-4 bg-[#1A6EB4] rounded-full py-3.5 items-center shadow-sm shadow-black/10">
-              <Text className="text-white font-bold text-body-md">₹{product.discountPrice * qty} Added</Text>
+              <Text className="text-white font-bold text-body-md">₹{product.pricePerPiece * qty} Added</Text>
             </View>
           </View>
         ) : (
@@ -148,7 +164,7 @@ export default function ProductDetailScreen() {
             className="bg-[#1A6EB4] rounded-full py-4 items-center shadow-sm shadow-black/10"
             onPress={handleAddToCart}
           >
-            <Text className="text-white font-bold text-body-md">Add to Cart — ₹{product.discountPrice}</Text>
+            <Text className="text-white font-bold text-body-md">Add to Cart — ₹{product.pricePerPiece}</Text>
           </TouchableOpacity>
         )}
       </View>
