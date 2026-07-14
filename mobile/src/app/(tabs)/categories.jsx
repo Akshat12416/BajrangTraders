@@ -37,7 +37,7 @@ export default function CategoriesScreen() {
           <Text className="text-center text-textSecondary mb-4 text-label">{error}</Text>
           <TouchableOpacity 
             className="bg-[#1A6EB4] px-6 py-3 rounded-full"
-            onPress={fetchCategories}
+            onPress={fetchCatalog}
           >
             <Text className="text-white font-bold">Retry</Text>
           </TouchableOpacity>

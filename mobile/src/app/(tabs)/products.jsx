@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCartStore } from '../../store/cartStore';
-import { getProductsByCategory } from '../../services/productService';
+import { useCatalogStore } from '../../store/catalogStore';
 
 export default function ProductListScreen() {
   const { category } = useLocalSearchParams();
@@ -16,26 +16,18 @@ export default function ProductListScreen() {
   const addItem = useCartStore(state => state.addItem);
   const updateQuantity = useCartStore(state => state.updateQuantity);
   
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getProductsByCategory(category);
-      setProducts(data);
-    } catch (err) {
-      setError('Failed to load products. Please check your connection.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { products: allProducts, loading, error, fetchCatalog } = useCatalogStore();
+  
+  // Filter locally based on the category param
+  const products = category 
+    ? allProducts.filter(p => p.categoryCode === category)
+    : allProducts;
 
   useEffect(() => {
-    fetchProducts();
-  }, [category]);
+    if (allProducts.length === 0) {
+      fetchCatalog();
+    }
+  }, []);
 
   const getItemQuantity = (productId) => {
     const item = cartItems.find(i => i.productId === productId);
@@ -72,7 +64,7 @@ export default function ProductListScreen() {
           <Text className="text-center text-textSecondary mb-4 text-label">{error}</Text>
           <TouchableOpacity 
             className="bg-[#1A6EB4] px-6 py-3 rounded-full"
-            onPress={fetchProducts}
+            onPress={fetchCatalog}
           >
             <Text className="text-white font-bold">Retry</Text>
           </TouchableOpacity>
