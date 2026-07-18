@@ -5,15 +5,17 @@ import { useAuthStore } from '../store/authStore';
 
 export default function IndexRedirect() {
   const router = useRouter();
-  const { isLoggedIn } = useAuthStore();
+  const { isLoggedIn, _hasHydrated } = useAuthStore();
 
   useEffect(() => {
+    if (!_hasHydrated) return;
+
     if (isLoggedIn) {
       router.replace('/(tabs)');
     } else {
       router.replace('/(auth)/login');
     }
-  }, [isLoggedIn, router]);
+  }, [isLoggedIn, _hasHydrated, router]);
 
   return <View className="flex-1 bg-background" />;
 }

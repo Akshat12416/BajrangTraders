@@ -5,6 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const useAuthStore = create(
   persist(
     (set) => ({
+      _hasHydrated: false,
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
       isLoggedIn: false,
       token: null,
       customer: null,
