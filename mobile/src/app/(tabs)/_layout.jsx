@@ -23,9 +23,8 @@ export default function TabLayout() {
         },
         tabBarStyle: { 
           position: 'absolute',
-          bottom: Platform.OS === 'android' ? 12 : insets.bottom + 16,
-          left: 16,
-          right: 16,
+          bottom: insets.bottom > 0 ? insets.bottom + 12 : 24,
+          marginHorizontal: 16,
           height: 64, 
           borderRadius: 32,
           backgroundColor: '#FFFFFF', 
